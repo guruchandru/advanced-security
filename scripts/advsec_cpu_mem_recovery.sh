@@ -29,6 +29,7 @@ fi
 KB=1024
 SAMPLING_TIME=10
 MAX_CPU_THRESHOLD=45
+AGENT_PS_COUNT_THRESHOLD=3
 
 # soft and hard limits are in MB
 MAX_MEM_FIRST_SOFT_LIMIT=40
@@ -107,6 +108,16 @@ log_agent_cpu_statistics()
 	echo "####Advsec Agent CPU stats####" >> $ADVSEC_AGENT_LOG_PATH
 	echo_t "$agent_cpu_stats" >> $ADVSEC_AGENT_LOG_PATH
 	echo "##############################" >> $ADVSEC_AGENT_LOG_PATH
+}
+
+advsec_agent_multiple_processes_recovery()
+{
+    AGENT_PS_COUNT=$(echo "$PID_LIST" | wc -w)
+    if [ "$AGENT_PS_COUNT" -gt "$AGENT_PS_COUNT_THRESHOLD" ]; then
+        echo_t "Advsec Agent multiple processes detected, count=$AGENT_PS_COUNT" >> $ADVSEC_AGENT_LOG_PATH
+        advsec_restart_agent "MultipleProcesses"
+        exit
+    fi
 }
 
 log_agent_mem_statistics()
@@ -193,6 +204,8 @@ else
 		fi
 	fi
 fi
+
+advsec_agent_multiple_processes_recovery
 
 log_agent_mem_statistics
 
