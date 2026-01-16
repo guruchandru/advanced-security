@@ -20,6 +20,8 @@
 #ifndef  _PLUGIN_MAIN_H
 #define  _PLUGIN_MAIN_H
 
+/* Compatibility types to replace common-library */
+#include "advsec_compat_types.h"
 
 #if (defined _ANSC_WINDOWSNT) || (defined _ANSC_WINDOWS9X)
 

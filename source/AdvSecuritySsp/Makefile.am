@@ -17,7 +17,9 @@
 ##########################################################################
 AM_CFLAGS = -D_ANSC_LINUX
 AM_CFLAGS += -D_ANSC_USER
-AM_LDFLAGS = -lccsp_common -ldl -lwebconfig_framework
+# Legacy DML and common-library lines commented out for JSON-driven RBUS approach
+#AM_LDFLAGS = -lccsp_common -ldl -lwebconfig_framework
+AM_LDFLAGS = -ldl -lwebconfig_framework -lrbus
 
 if CCSP_ARCH_ARM
 AM_CFLAGS += -D_ANSC_LITTLE_ENDIAN_
@@ -28,6 +30,8 @@ ACLOCAL_AMFLAGS = -I m4
 hardware_platform = i686-linux-gnu
 
 bin_PROGRAMS = CcspAdvSecuritySsp
-CcspAdvSecuritySsp_CPPFLAGS = -I$(top_srcdir)/include -I$(top_srcdir)/source/AdvSecurityDml -I$(top_srcdir)/source/AdvSecuritySsp $(CPPFLAGS)
-CcspAdvSecuritySsp_SOURCES = ssp_messagebus_interface.c ssp_main.c ssp_action.c ssp_messagebus_interface_priv.c dm_pack_datamodel.c
-CcspAdvSecuritySsp_LDFLAGS = -lccsp_common -ldl -lsyscfg -rdynamic -lwebconfig_framework $(SSP_LDFLAGS)
+CcspAdvSecuritySsp_CPPFLAGS = -I$(top_srcdir)/include -I$(top_srcdir)/source/AdvSecurityDml -I$(top_srcdir)/source/AdvSecuritySsp $(CPPFLAGS) -I${PKG_CONFIG_SYSROOT_DIR}$(includedir)/rbus -I${PKG_CONFIG_SYSROOT_DIR}$(includedir)/cjson
+CcspAdvSecuritySsp_SOURCES = ssp_messagebus_interface.c ssp_main.c ssp_action.c ssp_messagebus_interface_priv.c
+# ccsp_common removed: replaced by RBUS/JSON config auto-registration
+#CcspAdvSecuritySsp_LDFLAGS = -lccsp_common -ldl -lsyscfg -rdynamic -lwebconfig_framework $(SSP_LDFLAGS)
+CcspAdvSecuritySsp_LDFLAGS = -ldl -rdynamic -lwebconfig_framework -lrbus -lcjson $(SSP_LDFLAGS)

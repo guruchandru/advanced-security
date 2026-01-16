@@ -30,21 +30,70 @@
 #endif
 #include "stdlib.h"
 #include "webconfig_framework.h"
-#include "safec_lib_common.h"
 #include <sys/stat.h>
+#include <sys/types.h>
+#include <errno.h>
+/* RBUS implementation */
+#include "../AdvSecurityDml/advsec_rbus_handlers.h"
+
 #define MAX_SUBSYSTEM_SIZE 32
 
 #define ADVSEC_CCSP_INIT_FILE_BOOTUP "/tmp/advsec_ccsp_initialized_bootup"
 #define ADVSEC_CUJO_AGENT_ROOT_PRIV "/tmp/advsec_cujo_agent_root_priv"
 #define BLOCKLIST_FILE "/opt/secure/Blocklist_file.txt"
 #define ADVSEC_AGENT_PROC_NAME "cujo-agent"
+#define ADVSEC_LOG_FILE "/rdklogs/logs/advsec_test.log"
 #define NUM_SUBSYSTEM_TYPES (sizeof(gSubsystem_type_table)/sizeof(gSubsystem_type_table[0]))
 
-PDSLH_CPE_CONTROLLER_OBJECT     pDslhCpeController      = NULL;
-PCOMPONENT_COMMON_DM            g_pComponent_Common_Dm  = NULL;
-PCCSP_FC_CONTEXT                pAdvSecFcContext           = (PCCSP_FC_CONTEXT            )NULL;
-PCCSP_CCD_INTERFACE             pAdvSecCcdIf               = (PCCSP_CCD_INTERFACE         )NULL;
-PCCC_MBI_INTERFACE              pTadMbiIf               = (PCCC_MBI_INTERFACE          )NULL;
+/* Global log file handle */
+FILE* g_advsec_logfile = NULL;
+
+/* Initialize logging to file */
+static void init_advsec_logging(void) {
+    /* Create directory if it doesn't exist */
+    if (mkdir("/rdklogs", 0755) != 0 && errno != EEXIST) {
+        fprintf(stderr, "Failed to create /rdklogs directory: %s\n", strerror(errno));
+    }
+    if (mkdir("/rdklogs/logs", 0755) != 0 && errno != EEXIST) {
+        fprintf(stderr, "Failed to create /rdklogs/logs directory: %s\n", strerror(errno));
+    }
+    
+    /* Open log file */
+    g_advsec_logfile = fopen(ADVSEC_LOG_FILE, "a");
+    if (!g_advsec_logfile) {
+        fprintf(stderr, "Failed to open log file %s: %s\n", ADVSEC_LOG_FILE, strerror(errno));
+    } else {
+        fprintf(g_advsec_logfile, "\n=== Advanced Security Log Started ===\n");
+        fflush(g_advsec_logfile);
+    }
+}
+
+/* Initialize logging to file */
+static void init_advsec_logging(void) {
+    /* Create directory if it doesn't exist */
+    if (mkdir("/rdklogs", 0755) != 0 && errno != EEXIST) {
+        fprintf(stderr, "Failed to create /rdklogs directory: %s\n", strerror(errno));
+    }
+    if (mkdir("/rdklogs/logs", 0755) != 0 && errno != EEXIST) {
+        fprintf(stderr, "Failed to create /rdklogs/logs directory: %s\n", strerror(errno));
+    }
+    
+    /* Open log file */
+    g_advsec_logfile = fopen(ADVSEC_LOG_FILE, "a");
+    if (!g_advsec_logfile) {
+        fprintf(stderr, "Failed to open log file %s: %s\n", ADVSEC_LOG_FILE, strerror(errno));
+    } else {
+        fprintf(g_advsec_logfile, "\n=== Advanced Security Log Started ===\n");
+        fflush(g_advsec_logfile);
+    }
+}
+
+/* Legacy common-library global variables commented out for JSON-driven RBUS approach */
+/* PDSLH_CPE_CONTROLLER_OBJECT     pDslhCpeController      = NULL; */
+/* PCOMPONENT_COMMON_DM            g_pComponent_Common_Dm  = NULL; */
+/* PCCSP_FC_CONTEXT                pAdvSecFcContext           = (PCCSP_FC_CONTEXT            )NULL; */
+/* PCCSP_CCD_INTERFACE             pAdvSecCcdIf               = (PCCSP_CCD_INTERFACE         )NULL; */
+/* PCCC_MBI_INTERFACE              pTadMbiIf               = (PCCC_MBI_INTERFACE          )NULL; */
 char                            g_Subsystem[MAX_SUBSYSTEM_SIZE]         = {0};
 BOOL                            g_bActive               = FALSE;
 
@@ -99,10 +148,11 @@ int get_gSubsystem_type_from_name(char *name, enum subsytemType_e *type_ptr)
 
 int  cmd_dispatch(int  command)
 {
-    char*                           pParamNames[]      = {"Device.IP.Diagnostics.IPPing."};
-    parameterValStruct_t**          ppReturnVal        = NULL;
-    int                             ulReturnValCount   = 0;
-    int                             i                  = 0;
+    /* Legacy messagebus/DML code commented out for RBUS approach - no longer needed */
+    /* char*                           pParamNames[]      = {"Device.IP.Diagnostics.IPPing."}; */
+    /* parameterValStruct_t**          ppReturnVal        = NULL; */
+    /* int                             ulReturnValCount   = 0; */
+    /* int                             i                  = 0; */
     ANSC_STATUS                     returnStatus       = ANSC_STATUS_SUCCESS;
 
     switch ( command )
@@ -110,45 +160,27 @@ int  cmd_dispatch(int  command)
             case	'e' :
 
 #ifdef _ANSC_LINUX
-                CcspTraceInfo(("Connect to bus daemon...\n"));
+                CcspTraceInfo(("Initializing Advanced Security with RBUS...\n"));
 
-            {
-                char                            CName[256];
-                errno_t                         rc = -1;
-
-                rc = sprintf_s(CName, sizeof(CName), "%s%s", g_Subsystem, CCSP_COMPONENT_ID_ADVSEC);
-                if(rc < EOK)
-                {
-                    ERR_CHK(rc);
+                /* New RBUS-based initialization */
+                if (advsec_rbus_init(CCSP_COMPONENT_NAME_ADVSEC) != 0) {
+                    CcspTraceError(("Failed to initialize RBUS\n"));
                     return -1;
                 }
 
-                returnStatus = ssp_AdvsecMbi_MessageBusEngage
-                               ( 
-                                   CName,
-                                   CCSP_MSG_BUS_CFG,
-                                   CCSP_COMPONENT_PATH_ADVSEC
-                               );
-                if(returnStatus != ANSC_STATUS_SUCCESS)
-                     return -1;
-            }
+                g_bActive = TRUE;
+                CcspTraceInfo(("AdvSec RBUS Module loaded successfully...\n"));
+
+                /* Legacy messagebus/DML approach (commented out) */
 
 #endif
-
-                returnStatus = ssp_create_advsec();
-                if(returnStatus != ANSC_STATUS_SUCCESS)
-                     return -1;
-                returnStatus = ssp_engage_advsec();
-                if(returnStatus != ANSC_STATUS_SUCCESS)
-                     return -1;
-                g_bActive = TRUE;
-
-                CcspTraceInfo(("AdvSec Module loaded successfully...\n"));
 
             break;
 
             case    'r' :
 
+            /* Legacy CcspCcMbi_GetParameterValues will be replaced with rbus_get() */
+            #if 0
             CcspCcMbi_GetParameterValues
                 (
                     DSLH_MPA_ACCESS_CONTROL_ACS,
@@ -165,6 +197,7 @@ int  cmd_dispatch(int  command)
             {
                 CcspTraceWarning(("Parameter %d name: %s value: %s \n", i+1, ppReturnVal[i]->parameterName, ppReturnVal[i]->parameterValue));
             }
+            #endif
 
 			break;
 
@@ -181,8 +214,14 @@ int  cmd_dispatch(int  command)
                 break;
 
         case    'c':
-
-                ssp_cancel_advsec();
+                /* Terminate RBUS */
+                if (g_bActive) {
+                    advsec_rbus_terminate();
+                    g_bActive = FALSE;
+                }
+                
+                /* Legacy cancel function (commented out) */
+                /* ssp_cancel_advsec(); */
 
                 break;
 
@@ -401,6 +440,11 @@ int main(int argc, char* argv[])
     enum subsytemType_e             type;
     int                             ret                = 0;
 
+    /* Initialize logging to file */
+    init_advsec_logging();
+    
+    CcspTraceInfo(("Advanced Security SSP Starting...\n"));
+
     debugLogFile = stderr;
 #if defined(_DEBUG) && defined(_COSA_SIM_)
     AnscSetTraceLevel(CCSP_TRACE_LEVEL_INFO);
@@ -564,6 +608,11 @@ int main(int argc, char* argv[])
 
     if ( g_bActive )
     {
+        /* Terminate RBUS */
+        advsec_rbus_terminate();
+        g_bActive = FALSE;
+        
+        /* Legacy cancel function (commented out)
         returnStatus = ssp_cancel_advsec();
         if(returnStatus != ANSC_STATUS_SUCCESS)
         {
@@ -572,6 +621,14 @@ int main(int argc, char* argv[])
         }
 
         g_bActive = FALSE;
+        */
+    }
+
+    /* Close log file */
+    if (g_advsec_logfile) {
+        fprintf(g_advsec_logfile, "=== Advanced Security Log Ended ===\n");
+        fclose(g_advsec_logfile);
+        g_advsec_logfile = NULL;
     }
 
     return 0;

@@ -19,6 +19,9 @@
 #ifndef  _SSP_INTERNAL_
 #define  _SSP_INTERNAL_
 
+/* Compatibility types to replace common-library */
+#include "../AdvSecurityDml/advsec_compat_types.h"
+
 #define  CCSP_COMMON_COMPONENT_HEALTH_Red                   1
 #define  CCSP_COMMON_COMPONENT_HEALTH_Yellow                2
 #define  CCSP_COMMON_COMPONENT_HEALTH_Green                 3
@@ -37,6 +40,7 @@
 #define  CCSP_COMPONENT_PATH_ADVSEC                            "/com/cisco/spvtg/ccsp/advsec"
 
 
+/* Legacy DML and common-library code commented out for JSON-driven RBUS approach
 #define  MESSAGE_BUS_CONFIG_FILE                            "msg_daemon.cfg"
 
 typedef  struct
@@ -56,7 +60,9 @@ _COMPONENT_COMMON_DM
     ULONG                           MemConsumed;
 }
 COMPONENT_COMMON_DM,  *PCOMPONENT_COMMON_DM;
+*/
 
+/* Common-library macros removed: replaced by RBUS/JSON config auto-registration
 #define ComponentCommonDmInit(component_common_dm)                                          \
         {                                                                                   \
             AnscZeroMemory(component_common_dm, sizeof(COMPONENT_COMMON_DM));               \
@@ -93,12 +99,13 @@ COMPONENT_COMMON_DM,  *PCOMPONENT_COMMON_DM;
             ComponentCommonDmClean(component_common_dm);                                    \
             AnscFreeMemory(component_common_dm);                                            \
          }
+*/
 
 int  cmd_dispatch(int  command);
 
 void load_data_model();
 
-
+/* SSP function declarations removed: replaced by RBUS/JSON config auto-registration
 ANSC_STATUS
 ssp_create_advsec
     (
@@ -113,8 +120,9 @@ ANSC_STATUS
 ssp_cancel_advsec
     (
     );
+*/
 
-
+/* SSP CCD function declarations removed: replaced by RBUS/JSON config auto-registration
 ANSC_STATUS
 ssp_LoadCosaPluginLibrary
 (
@@ -211,6 +219,6 @@ COSAGetDiagPluginInfo
     (
         ANSC_HANDLE                 hThisObject
     );
-
+*/
 
 #endif

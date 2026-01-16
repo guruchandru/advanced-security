@@ -26,8 +26,11 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <ctype.h>
-#include "ansc_status.h"
-#include "ansc_platform.h"
+/* Legacy common-library includes commented out for JSON-driven RBUS approach */
+/* #include "ansc_status.h" */
+/* #include "ansc_platform.h" */
+/* Compatibility types to replace common-library */
+#include "advsec_compat_types.h"
 
 #include "webconfig_framework.h"
 #include "advsecurity_param.h"

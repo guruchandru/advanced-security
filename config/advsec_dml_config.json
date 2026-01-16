@@ -1,0 +1,359 @@
+{
+	"definitions": {
+		"uint32_t": {
+			"type": "integer",
+			"minimum": 0,
+			"maximum": 4294967295
+		},
+		"boolean": {
+			"type": "bool",
+			"minimum": 0,
+			"maximum": 1
+		},
+		"string": {
+			"type": "string",
+			"minimum": 1,
+			"maximum": 256
+		}
+	},
+	"Device": {
+		"DeviceInfo": {
+			"X_RDKCENTRAL-COM_DeviceFingerPrint": {
+				"List_Of_Def": [
+					{
+						"Enable": {
+							"type": "boolean",
+							"writable": true
+						}
+					},
+					{
+						"LoggingPeriod": {
+							"type": "uint32_t",
+							"writable": true
+						}
+					},
+					{
+						"EndpointURL": {
+							"type": "string",
+							"writable": true
+						}
+					},
+					{
+						"LogLevel": {
+							"type": "uint32_t",
+							"writable": true
+						}
+					}
+				]
+			},
+			"X_RDKCENTRAL-COM_AdvancedSecurity": {
+				"List_Of_Def": [
+					{
+						"Data": {
+							"type": "string",
+							"writable": true
+						}
+					}
+				],
+				"SafeBrowsing": {
+					"List_Of_Def": [
+						{
+							"Enable": {
+								"type": "boolean",
+								"writable": true
+							}
+						},
+						{
+							"LookupTimeout": {
+								"type": "uint32_t",
+								"writable": true
+							}
+						},
+						{
+							"LookupTimeoutExceededCount": {
+								"type": "uint32_t",
+								"writable": true
+							}
+						},
+						{
+							"Threshold": {
+								"type": "uint32_t",
+								"writable": false
+							}
+						},
+						{
+							"Timeout": {
+								"type": "uint32_t",
+								"writable": false
+							}
+						},
+						{
+							"Cachettl": {
+								"type": "uint32_t",
+								"writable": false
+							}
+						},
+						{
+							"Ttl": {
+								"type": "uint32_t",
+								"writable": false
+							}
+						},
+						{
+							"WhitelistMaxEntries": {
+								"type": "uint32_t",
+								"writable": false
+							}
+						},
+						{
+							"Endpoint": {
+								"type": "string",
+								"writable": false
+							}
+						},
+						{
+							"Blockpage": {
+								"type": "string",
+								"writable": false
+							}
+						},
+						{
+							"Warnpage": {
+								"type": "string",
+								"writable": false
+							}
+						},
+						{
+							"Cacheurl": {
+								"type": "string",
+								"writable": false
+							}
+						},
+						{
+							"OtmDedupFqdn": {
+								"type": "string",
+								"writable": false
+							}
+						}
+					]
+				},
+				"Softflowd": {
+					"List_Of_Def": [
+						{
+							"Enable": {
+								"type": "boolean",
+								"writable": true
+							}
+						}
+					]
+				}
+			},
+			"X_RDKCENTRAL-COM_AdvancedParentalControl": {
+				"List_Of_Def": [
+					{
+						"Activate": {
+							"type": "boolean",
+							"writable": true
+						}
+					}
+				]
+			},
+			"X_RDKCENTRAL-COM_PrivacyProtection": {
+				"List_Of_Def": [
+					{
+						"Activate": {
+							"type": "boolean",
+							"writable": true
+						}
+					}
+				]
+			},
+			"X_RDKCENTRAL-COM_RFC": {
+				"Feature": {
+					"RabidFramework": {
+						"List_Of_Def": [
+							{
+								"MemoryLimit": {
+									"type": "uint32_t",
+									"writable": true
+								}
+							},
+							{
+								"MacCacheSize": {
+									"type": "uint32_t",
+									"writable": true
+								}
+							},
+							{
+								"DNSCacheSize": {
+									"type": "uint32_t",
+									"writable": true
+								}
+							}
+						]
+					},
+					"AdvancedParentalControl": {
+						"List_Of_Def": [
+							{
+								"Enable": {
+									"type": "boolean",
+									"writable": true
+								}
+							}
+						]
+					},
+					"PrivacyProtection": {
+						"List_Of_Def": [
+							{
+								"Enable": {
+									"type": "boolean",
+									"writable": true
+								}
+							}
+						]
+					},
+					"DeviceFingerPrintICMPv6": {
+						"List_Of_Def": [
+							{
+								"Enable": {
+									"type": "boolean",
+									"writable": true
+								}
+							}
+						]
+					},
+					"WS-Discovery_Analysis": {
+						"List_Of_Def": [
+							{
+								"Enable": {
+									"type": "boolean",
+									"writable": true
+								}
+							}
+						]
+					},
+					"AdvancedSecurityOTM": {
+						"List_Of_Def": [
+							{
+								"Enable": {
+									"type": "boolean",
+									"writable": true
+								}
+							}
+						]
+					},
+					"AdvanceSecurityUserSpace": {
+						"List_Of_Def": [
+							{
+								"Enable": {
+									"type": "boolean",
+									"writable": true
+								}
+							}
+						]
+					},
+					"AdvanceSecurityCujoTracer": {
+						"List_Of_Def": [
+							{
+								"Enable": {
+									"type": "boolean",
+									"writable": true
+								}
+							}
+						]
+					},
+					"AdvanceSecurityCujoTelemetry": {
+						"List_Of_Def": [
+							{
+								"Enable": {
+									"type": "boolean",
+									"writable": true
+								}
+							}
+						]
+					},
+					"AdvSecSentryAtTheEdge": {
+						"List_Of_Def": [
+							{
+								"Enable": {
+									"type": "boolean",
+									"writable": true
+								}
+							}
+						]
+					},
+					"AdvSecTCPTrackerFilterDevices": {
+						"List_Of_Def": [
+							{
+								"Enable": {
+									"type": "boolean",
+									"writable": true
+								}
+							}
+						]
+					},
+					"WifiDataCollection": {
+						"List_Of_Def": [
+							{
+								"Enable": {
+									"type": "boolean",
+									"writable": true
+								}
+							}
+						]
+					},
+					"Levl": {
+						"List_Of_Def": [
+							{
+								"Enable": {
+									"type": "boolean",
+									"writable": true
+								}
+							}
+						]
+					},
+					"AdvSecAgent": {
+						"List_Of_Def": [
+							{
+								"Enable": {
+									"type": "boolean",
+									"writable": true
+								}
+							}
+						]
+					},
+					"AdvSecSafeBrowsing": {
+						"List_Of_Def": [
+							{
+								"Enable": {
+									"type": "boolean",
+									"writable": true
+								}
+							}
+						]
+					},
+					"AdvSecCujoTelemetryWiFiFP": {
+						"List_Of_Def": [
+							{
+								"Enable": {
+									"type": "boolean",
+									"writable": true
+								}
+							}
+						]
+					},
+					"AdvSecAgentRaptr": {
+						"List_Of_Def": [
+							{
+								"Enable": {
+									"type": "boolean",
+									"writable": true
+								}
+							}
+						]
+					}
+				}
+			}
+		}
+	}
+}

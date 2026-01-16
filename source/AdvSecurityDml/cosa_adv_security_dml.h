@@ -18,7 +18,10 @@
 #ifndef  _COSA_ADV_SECURITY_DML_H
 #define  _COSA_ADV_SECURITY_DML_H
 
-#include "slap_definitions.h"
+/* Legacy common-library includes commented out for JSON-driven RBUS approach */
+/* #include "slap_definitions.h" */
+/* Compatibility types to replace common-library */
+#include "advsec_compat_types.h"
 
 ANSC_STATUS
 CosaDmlServiceManagerInit

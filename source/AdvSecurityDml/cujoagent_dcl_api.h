@@ -14,7 +14,8 @@
 #include <sys/uio.h>
 #include <sys/un.h>
 
-#include "ccsp_trace.h"
+/* Legacy ccsp_trace macros replaced by advsec_compat_types.h */
+/* #include "ccsp_trace.h" */
 #include "secure_wrapper.h"
 #include "user_base.h"
 
@@ -78,7 +79,7 @@
  * The value, of course, is platform dependent, therefore, we would not want to
  * rely on any of the HAL defines, not to say that most likely we would be
  * encouraged not to do so. To make our assumptions on the interval visible, use
- * OneWifi's define. */
+ * Platform default interval. */
 #define DCL_CSI_INTERVAL_MS     MIN_CSI_INTERVAL
 
 /* The agent has this parameter configurable, make sure it matches. */
@@ -267,7 +268,7 @@ struct consumer {
 
   /* Fifo loop epoll fd to wait for notifications:
    *   1) for the fifo loop to return
-   *   2) for fifo loop to read CSI/CFO data from fifo pipe OneWifi writes to
+  *   2) for fifo loop to read CSI/CFO data from fifo pipe written by backend
    * Listens for eventfd's:
    *   1) fifo_notification
    * Listens for fifo fd's:

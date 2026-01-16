@@ -33,20 +33,27 @@
 #include "cosa_adv_security_internal.h"
 #include "cosa_adv_security_dml.h"
 #include "cosa_adv_security_webconfig.h"
-#include "ccsp_psm_helper.h"
+# Legacy CCSP dependencies commented out for JSON-driven RBUS approach
+/* Legacy CCSP PSM helper commented out for JSON-driven RBUS approach */
+/* #include "ccsp_psm_helper.h" */
+*/
 #include <sysevent/sysevent.h>
 #include <time.h>
 #include "cJSON.h"
-#include <ccsp/platform_hal.h>
+/* Legacy HAL dependencies commented out for JSON-driven RBUS approach */
+/* #include <ccsp/platform_hal.h> */
 #include <syscfg/syscfg.h>
 #include <sys/sysinfo.h>
-#include "safec_lib_common.h"
+/* Legacy common-library includes commented out for JSON-driven RBUS approach */
+/* #include "safec_lib_common.h" */
 #include "secure_wrapper.h"
 #include <rbus/rbus.h>
 #if defined(_COSA_BCM_MIPS_)
-#include <ccsp/dpoe_hal.h>
+/* Legacy HAL dependencies commented out for JSON-driven RBUS approach */
+/* #include <ccsp/dpoe_hal.h> */
 #else
-#include <ccsp/cm_hal.h>
+/* Legacy HAL dependencies commented out for JSON-driven RBUS approach */
+/* #include <ccsp/cm_hal.h> */
 #endif
 #if !(_COSA_BCM_MIPS_ || _COSA_DRG_TPG_ || CONFIG_CISCO)
 #include <autoconf.h>
@@ -102,7 +109,10 @@
 #define NUM_SYSEVENT_TYPES (sizeof(advSysEvent_type_table)/sizeof(advSysEvent_type_table[0]))
 
 #if defined(_PLATFORM_RASPBERRYPI_) || defined(_PLATFORM_TURRIS_) || defined(_XER5_PRODUCT_REQ_) || defined(_PLATFORM_BANANAPI_R4_)
-#include "ccsp_vendor.h"
+# Legacy code commented out for JSON-based RBUS approach
+/* Legacy CCSP vendor header commented out for JSON-driven RBUS approach */
+/* #include "ccsp_vendor.h" */
+*/
 #endif
 
 rbusHandle_t rbus_handle;
@@ -200,6 +210,11 @@ int get_advSysEvent_type_from_name(char *name, enum advSysEvent_e *type_ptr)
   return 0;
 }
 
+/* Legacy function commented out for JSON-driven RBUS approach
+ * This function uses CcspBaseIf_getParameterValues from common-library
+ * Will be replaced with RBUS rbus_get() equivalent
+ */
+#if 0
 static BOOL Advsec_getPartnerBasedURL(char *url)
 {
     ANSC_STATUS ret = ANSC_STATUS_FAILURE;
@@ -241,6 +256,7 @@ static BOOL Advsec_getPartnerBasedURL(char *url)
         return false;
     }
 }
+#endif
 
 static BOOL Is_Device_Finger_Print_Enabled()
 {

@@ -20,10 +20,12 @@
 #include <string.h>
 #include <msgpack.h>
 #include <stdarg.h>
-#include "ccsp_trace.h"
+/* Legacy ccsp_trace macros replaced by advsec_compat_types.h */
+/* #include "ccsp_trace.h" */
 #include "advsecurity_helpers.h"
 #include "advsecurity_param.h"
-#include "ansc_platform.h"
+/* Legacy code commented out for JSON-based RBUS approach */
+/* #include "ansc_platform.h" */
 
 /*----------------------------------------------------------------------------*/
 /*                                   Macros                                   */

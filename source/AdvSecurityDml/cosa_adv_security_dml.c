@@ -18,15 +18,18 @@
    
 #include "cosa_adv_security_dml.h"
 
-#include "ansc_platform.h"
+/* Legacy platform includes commented out for JSON-driven RBUS approach */
+/* #include "ansc_platform.h" */
 #include "cosa_adv_security_internal.h"
 #include "cosa_adv_security_webconfig.h"
 #include "syslog.h"
-#include "ccsp_trace.h"
+/* Legacy ccsp_trace macros replaced by advsec_compat_types.h */
+/* #include "ccsp_trace.h" */
 #include "msgpack.h"
 #include "advsecurity_param.h"
 #include "base64.h"
-#include "safec_lib_common.h"
+/* Legacy common-library includes commented out for JSON-driven RBUS approach */
+/* #include "safec_lib_common.h" */
 
 #define MIN_AGENT_MEMORY_HARD_LIMIT 45
 #define MAX_RABID_MACCACHE_SIZE 32768

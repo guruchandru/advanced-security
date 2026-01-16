@@ -19,9 +19,11 @@
 #include <errno.h>
 #include <string.h>
 #include <msgpack.h>
-#include "ccsp_trace.h"
+/* Legacy ccsp_trace macros replaced by advsec_compat_types.h */
+/* #include "ccsp_trace.h" */
 #include "advsecurity_helpers.h"
-#include "safec_lib_common.h"
+/* Legacy common-library includes commented out for JSON-driven RBUS approach */
+/* #include "safec_lib_common.h" */
 /*----------------------------------------------------------------------------*/
 /*                                   Macros                                   */
 /*----------------------------------------------------------------------------*/

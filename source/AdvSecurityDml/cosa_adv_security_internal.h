@@ -19,8 +19,11 @@
 #ifndef  _COSA_ADV_SEC_INTERNAL_H
 #define  _COSA_ADV_SEC_INTERNAL_H
 
-#include "ansc_platform.h"
-#include "ansc_string_util.h"
+/* Legacy common-library includes commented out for JSON-driven RBUS approach */
+/* #include "ansc_platform.h" */
+/* #include "ansc_string_util.h" */
+/* Compatibility types to replace common-library */
+#include "advsec_compat_types.h"
 
 #define ADVSEC_MIN_LOG_TIMEOUT (60 * 1)
 #define ADVSEC_MAX_LOG_TIMEOUT (60 * 48)

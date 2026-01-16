@@ -19,7 +19,8 @@
 #include "cosa_adv_security_webconfig.h"
 #include "webconfig_framework.h"
 #include <syscfg/syscfg.h>
-#include "safec_lib_common.h"
+/* Legacy common-library includes commented out for JSON-driven RBUS approach */
+/* #include "safec_lib_common.h" */
 /* API to get the subdoc version */
 
 

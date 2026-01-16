@@ -33,7 +33,6 @@
 **********************************************************************/
 
 #include "ssp_global.h"
-#include "safec_lib_common.h"
 
 
 ANSC_HANDLE                 bus_handle         = NULL;
@@ -51,9 +50,16 @@ ssp_AdvsecMbi_MessageBusEngage
         char * path
     )
 {
-    ANSC_STATUS                 returnStatus       = ANSC_STATUS_SUCCESS;
+    /* ANSC_STATUS                 returnStatus       = ANSC_STATUS_SUCCESS; */
+    void*                       bus_handle         = NULL;  /* RBUS handle placeholder */
+    /* Legacy CCSP_Base_Func_CB will be replaced with RBUS method handlers */
+    #if 0
     CCSP_Base_Func_CB           cb                 = {0};
+    #endif
     errno_t                     rc                 = -1;
+
+    /* Mark unused parameters in RBUS implementation */
+    UNREFERENCED_PARAMETER(config_file);
 
     if ( ! component_id || ! path )
     {
@@ -61,6 +67,8 @@ ssp_AdvsecMbi_MessageBusEngage
         return ANSC_STATUS_FAILURE;
     }
 
+    /* Legacy CCSP_Message_Bus_Init will be replaced with rbus_open(). Ansc_AllocateMemory_Callback/Ansc_FreeMemory_Callback not needed in RBUS. */
+    #if 0
     /* Connect to message bus */
     returnStatus =
         CCSP_Message_Bus_Init
@@ -79,6 +87,7 @@ ssp_AdvsecMbi_MessageBusEngage
         return returnStatus;
     }
     ssp_AdvsecMbi_WaitConditionReady(bus_handle, CCSP_DBUS_PSM, CCSP_DBUS_PATH_PSM, component_id);
+    #endif
     CcspTraceInfo(("!!! Connected to message bus... bus_handle: 0x%8p !!!\n", bus_handle));
     g_MessageBusHandle_Irep = bus_handle;
     rc = strcpy_s(g_SubSysPrefix_Irep, sizeof(g_SubSysPrefix_Irep), g_Subsystem);
@@ -90,6 +99,8 @@ ssp_AdvsecMbi_MessageBusEngage
 
     CCSP_Msg_SleepInMilliSeconds(1000);
 
+    /* Legacy callback structure assignments will be replaced with RBUS method handlers */
+    #if 0
     /* Base interface implementation that will be used cross components */
     cb.getParameterValues     = CcspCcMbi_GetParameterValues;
     cb.setParameterValues     = CcspCcMbi_SetParameterValues;
@@ -110,6 +121,7 @@ ssp_AdvsecMbi_MessageBusEngage
     /*Componet Health*/
     cb.getHealth              = ssp_AdvsecMbi_GetHealth;
 
+    /* Legacy messagebus callback registrations will be replaced with RBUS method registrations (CcspBaseIf_SetCallback -> rbus_registerMethod(), CcspBaseIf_Register_Event -> rbus_subscribeToEvent()) */
     CcspBaseIf_SetCallback(bus_handle, &cb);
 
 
@@ -129,6 +141,7 @@ ssp_AdvsecMbi_MessageBusEngage
 
         return returnStatus;
     }
+    #endif
 
     return ANSC_STATUS_SUCCESS;
 }

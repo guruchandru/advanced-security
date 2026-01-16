@@ -35,7 +35,7 @@
 #include "ssp_global.h"
 
 
-extern  PCOMPONENT_COMMON_DM            g_pComponent_Common_Dm;
+/* CCSP common component removed for RBUS approach */
 
 void ssp_AdvsecMbi_WaitConditionReady(void* bus_handle, const char* dst_component_id, char* dbus_path, char *src_component_id)
 {

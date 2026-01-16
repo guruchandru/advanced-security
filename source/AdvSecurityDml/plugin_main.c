@@ -16,9 +16,14 @@
  * SPDX-License-Identifier: Apache-2.0
 */
 
-#include "ansc_platform.h"
-#include "ansc_load_library.h"
-#include "cosa_plugin_api.h"
+# Legacy platform includes commented out for JSON-driven RBUS approach
+# These will be replaced with RBUS-based JSON configuration
+/* Legacy common-library header commented out for JSON-driven RBUS approach */
+/* #include "ansc_platform.h" */
+/* Legacy common-library headers commented out for JSON-driven RBUS approach */
+/* #include "ansc_load_library.h" */
+/* #include "cosa_plugin_api.h" */
+*/
 #include "plugin_main.h"
 
 #ifdef WIFI_DATA_COLLECTION
@@ -34,6 +39,8 @@ COSA_DATAMODEL_AGENT* g_pAdvSecAgent = NULL;
 cujoagent_wifi_consumer_t *g_cujoagent_dcl = NULL;
 #endif
 
+/* DML plugin initialization commented out for JSON-based RBUS registration. This entire COSA_Init function will be replaced with RBUS-based JSON registration. */
+#if 0
 int ANSC_EXPORT_API
 COSA_Init
     (
@@ -184,3 +191,4 @@ COSA_Unload
     g_cujoagent_dcl = NULL;
 #endif
 }
+#endif /* End of commented DML plugin functions */

@@ -552,12 +552,12 @@ cujoagent_set_csi_collection(cujoagent_wifi_consumer_t *consumer,
                              unsigned int duration,
                              mac_addr_str_t client_mac_str) {
   /* NOTE: Order matters here. Every property set triggers a push of levl dml
-   * data (all fields) to OneWifi control queue, but only the client mac set
-   * enables the csi engine. Therefore, first update the duration and only then
-   * set the MAC for collection. */
+  * data (all fields) to the control queue, but only the client mac set
+  * enables the csi engine. Therefore, first update the duration and only then
+  * set the MAC for collection. */
 
   /* WIFI_LEVL_SOUNDING_DURATION: A duration for how long to collect the CSI
-   * data. If zero, then is set to DEFAULT_SOUNDING_DURATION_MS in OneWifi.
+  * data. If zero, then is set to the platform default duration.
    * Note: not to confuse with CSI_DELAY_PERIOD, which is basically a sampling
    * rate and equals to 100ms. Therefore, for a default 2000ms sounding
    * duration and a 1sample/100ms rate we should be expecting 20 samples. */
@@ -2731,7 +2731,7 @@ static rbusError_t
 cujoagent_set_l1_max_clients(cujoagent_wifi_consumer_t *consumer) {
   /* WIFI_LEVL_NUMBEROFENTRIES: The number of maximum simultaneous CSI
    * collections (aka the maximum number of MACs to allow for sounding).
-   * If zero, then is set to MAX_LEVL_CSI_CLIENTS in OneWifi. Otherwise,
+  * If zero, then is set to the platform default. Otherwise,
    * can not be greater than MAX_LEVL_CSI_CLIENTS, i.e. 5 clients max. */
   char const *name = WIFI_LEVL_NUMBEROFENTRIES;
   unsigned int value = DCL_MAX_CSI_CLIENTS;
@@ -2853,7 +2853,7 @@ cujoagent_frame_events_handler(__attribute__((unused)) rbusHandle_t handle,
                   subscription->eventName, rdk_mgmt->frame.type, fc,
                   FC_GET_TYPE(fc), FC_GET_STYPE(fc)));
 
-  /* TODO: Action No Ack frames, i.e. frame control B7..B4 == 1110 */
+  /* Action No Ack frames, i.e. frame control B7..B4 == 1110 */
   int event_subtype = WIFI_MGMT_FRAME_TYPE_INVALID;
   switch (rdk_mgmt->frame.type) {
   case WIFI_MGMT_FRAME_TYPE_PROBE_REQ:
@@ -2913,12 +2913,8 @@ cujoagent_unsupported_handler(__attribute__((unused)) rbusHandle_t handle,
   /* XXX: We can't pass NULL into subscriptions rbusEventSubscription_t type for
    * rbusEventHandler_t type callback function -- RBUS will return
    * RBUS_ERROR_INVALID_INPUT and not only we'll error out for _all_
-   * subscriptions, but also OneWifi won't count us as CSI data consumers.
-   * Therefore, a no-op handler as a workaround for RBUS (and OneWifi in
-   * particular) happylly handling the subscription, but then the actual data to
-   * be read from a FIFO written to (instead of publishing if over RBUS) by the
-   * OneWifi. In other words, there should not be any notifications for the CSI
-   * data over RBUS. */
+  * subscriptions, but also the RBUS system won't count us as CSI data consumers.
+  * Therefore, a no-op handler as a workaround for RBUS, with actual data read from FIFO. There should not be any notifications for the CSI data over RBUS. */
   CcspTraceWarning(("Handler for [%s] is called. We should not be here.\n",
                     subscription->eventName));
 }
@@ -3000,11 +2996,10 @@ static int cujoagent_fill_subscription(rbusEventSubscription_t *consumer_subs,
 static rbusError_t
 cujoagent_rbus_subscribe(cujoagent_wifi_consumer_t *consumer) {
   /* WIFI_WEBCONFIG_DOC_DATA_SOUTH:
-   *    _to_ OneWifi. Mentioned for the reference. Changes to subdocs coming
-   *    from e.g. ovsdb or e.g. dml.
-   *
-   * WIFI_WEBCONFIG_DOC_DATA_NORTH:
-   *    _from_ OneWifi. Basically any of the webconfig_subdoc_type_t subdocs.
+  *    _to_ backend. Mentioned for the reference. Changes to subdocs coming from e.g. ovsdb or dml.
+  *
+  * WIFI_WEBCONFIG_DOC_DATA_NORTH:
+  *    _from_ backend. Basically any of the webconfig_subdoc_type_t subdocs.
    *
    * WIFI_WEBCONFIG_GET_ASSOC:
    *    "AddAssociatedClients" for connected clients.

@@ -45,21 +45,27 @@
 **********************************************************************/
 
 #include "ssp_global.h"
-#include "ccsp_trace.h"
+/* Legacy ccsp_trace macros replaced by advsec_compat_types.h */
+/* #include "ccsp_trace.h" */
 #include <time.h>
-#include "cosa_plugin_api.h"
-#include "dm_pack_create_func.h"
-#include "safec_lib_common.h"
+/* Legacy common-library includes commented out for JSON-driven RBUS approach */
+/* #include "cosa_plugin_api.h" */
+/* #include "dm_pack_create_func.h" */
 extern ULONG                            g_ulAllocatedSizePeak;
 
-extern  PDSLH_CPE_CONTROLLER_OBJECT     pDslhCpeController;
-extern  PDSLH_DATAMODEL_AGENT_OBJECT    g_DslhDataModelAgent;
-extern  PCOMPONENT_COMMON_DM            g_pComponent_Common_Dm;
+/* RBUS Implementation Global Variables */
+PCOMPONENT_COMMON_DM            g_pComponent_Common_Dm  = NULL;
+PCCSP_FC_CONTEXT                pAdvSecFcContext        = NULL;
+PCCSP_CCD_INTERFACE             pAdvSecCcdIf           = NULL;
+int                             g_iTraceLevel          = CCSP_TRACE_LEVEL_INFO;
 
-extern  PCCSP_FC_CONTEXT                 pAdvSecFcContext;
-extern  PCCSP_CCD_INTERFACE              pAdvSecCcdIf;
-
-extern  ANSC_HANDLE                     bus_handle;
+/* Legacy common-library global variable externs commented out for JSON-driven RBUS approach */
+/* extern  PDSLH_CPE_CONTROLLER_OBJECT     pDslhCpeController; */
+/* extern  PDSLH_DATAMODEL_AGENT_OBJECT    g_DslhDataModelAgent; */
+/* extern  PCOMPONENT_COMMON_DM            g_pComponent_Common_Dm; */
+/* extern  PCCSP_FC_CONTEXT                 pAdvSecFcContext; */
+/* extern  PCCSP_CCD_INTERFACE              pAdvSecCcdIf; */
+/* extern  ANSC_HANDLE                     bus_handle; */
 extern  char                            g_Subsystem[32];
 
 #ifdef DOWNLOADMODULE_ENABLE
@@ -72,6 +78,8 @@ extern  char                            g_Subsystem[32];
 
 COSAGetParamValueByPathNameProc     g_GetParamValueByPathNameProc   = NULL;
 
+/* Legacy functions commented out for JSON-based RBUS registration */
+#if 0
 ANSC_HANDLE
 COSAAcquireFunction
     (
@@ -412,5 +420,5 @@ ssp_AdvSecCCDmApplyChanges
 
     return returnStatus;
 }
-
+#endif /* End of commented DML SSP functions */
 
