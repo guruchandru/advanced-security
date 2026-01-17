@@ -20,9 +20,11 @@
 #ifndef ADVSEC_BUS_JSON_DECODE_H
 #define ADVSEC_BUS_JSON_DECODE_H
 
+#include "advsec_compat_types.h"  /* Include compatibility layer */
 #include <rbus.h>
 #include <stdbool.h>
 
+#define JSON_CONFIG_PATH "advsec_dml_config.json"
 /* Decode and register advanced security parameters from JSON config */
 int advsec_decode_json_config(rbusHandle_t handle, const char *json_file_path);
 

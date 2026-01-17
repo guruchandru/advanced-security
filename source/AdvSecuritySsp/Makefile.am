@@ -31,7 +31,5 @@ hardware_platform = i686-linux-gnu
 
 bin_PROGRAMS = CcspAdvSecuritySsp
 CcspAdvSecuritySsp_CPPFLAGS = -I$(top_srcdir)/include -I$(top_srcdir)/source/AdvSecurityDml -I$(top_srcdir)/source/AdvSecuritySsp $(CPPFLAGS) -I${PKG_CONFIG_SYSROOT_DIR}$(includedir)/rbus -I${PKG_CONFIG_SYSROOT_DIR}$(includedir)/cjson
-CcspAdvSecuritySsp_SOURCES = ssp_messagebus_interface.c ssp_main.c ssp_action.c ssp_messagebus_interface_priv.c
-# ccsp_common removed: replaced by RBUS/JSON config auto-registration
-#CcspAdvSecuritySsp_LDFLAGS = -lccsp_common -ldl -lsyscfg -rdynamic -lwebconfig_framework $(SSP_LDFLAGS)
-CcspAdvSecuritySsp_LDFLAGS = -ldl -rdynamic -lwebconfig_framework -lrbus -lcjson $(SSP_LDFLAGS)
+CcspAdvSecuritySsp_SOURCES = ssp_messagebus_interface.c ssp_main.c ssp_action.c ssp_messagebus_interface_priv.c ../AdvSecurityDml/advsec_compat_globals.c ../AdvSecurityDml/advsec_rbus_handlers.c ../AdvSecurityDml/advsec_bus_json_decode.c ../AdvSecurityDml/plugin_main.c ../AdvSecurityDml/cosa_adv_security_dml.c ../AdvSecurityDml/cosa_adv_security_internal.c ../AdvSecurityDml/cosa_adv_security_webconfig.c ../AdvSecurityDml/advsecurity_helpers.c ../AdvSecurityDml/advsecurity_param.c
+CcspAdvSecuritySsp_LDFLAGS = -lwebconfig_framework -lrbus -lcjson -lmsgpackc -ltrower-base64 -lsyscfg -lhal_platform -lcm_mgnt -lsafec -ldbus-1 -lrdkloggers -lbreakpadwrapper -lsysevent -lsecure_wrapper -ldl -rdynamic $(SSP_LDFLAGS)

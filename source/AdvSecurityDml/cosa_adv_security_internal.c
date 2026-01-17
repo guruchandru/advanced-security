@@ -33,30 +33,37 @@
 #include "cosa_adv_security_internal.h"
 #include "cosa_adv_security_dml.h"
 #include "cosa_adv_security_webconfig.h"
-# Legacy CCSP dependencies commented out for JSON-driven RBUS approach
+/* Legacy CCSP dependencies commented out for JSON-driven RBUS approach */
 /* Legacy CCSP PSM helper commented out for JSON-driven RBUS approach */
 /* #include "ccsp_psm_helper.h" */
-*/
 #include <sysevent/sysevent.h>
 #include <time.h>
 #include "cJSON.h"
 /* Legacy HAL dependencies commented out for JSON-driven RBUS approach */
-/* #include <ccsp/platform_hal.h> */
+#include <ccsp/platform_hal.h> 
 #include <syscfg/syscfg.h>
 #include <sys/sysinfo.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 /* Legacy common-library includes commented out for JSON-driven RBUS approach */
 /* #include "safec_lib_common.h" */
+#include <safec_lib.h>
 #include "secure_wrapper.h"
 #include <rbus/rbus.h>
 #if defined(_COSA_BCM_MIPS_)
 /* Legacy HAL dependencies commented out for JSON-driven RBUS approach */
-/* #include <ccsp/dpoe_hal.h> */
+#include <ccsp/dpoe_hal.h>
 #else
 /* Legacy HAL dependencies commented out for JSON-driven RBUS approach */
-/* #include <ccsp/cm_hal.h> */
+#include <ccsp/cm_hal.h>
 #endif
 #if !(_COSA_BCM_MIPS_ || _COSA_DRG_TPG_ || CONFIG_CISCO)
-#include <autoconf.h>
+/* #include <autoconf.h> */  /* Not available in RBUS environment */
+#if defined(_XB8_PRODUCT_REQ_)
+        #define CONFIG_VENDOR_NAME "Technicolor"
+        #define CONFIG_VENDOR_ID "28BE9B"
+        #define CONFIG_TI_GW_DESCRIPTION "DOCSIS 3.1 2-port Voice Gateway"
+#endif
 #endif
 
 #ifdef WIFI_DATA_COLLECTION
@@ -116,6 +123,7 @@
 #endif
 
 rbusHandle_t rbus_handle;
+rbusHandle_t g_rbusHandle; /* Global RBUS handle for Advanced Security */
 
 extern ANSC_HANDLE bus_handle;
 extern char g_Subsystem[32];
@@ -156,8 +164,11 @@ static char *g_AdvSecCujoTelemetryEnabled = "Adv_AdvSecCujoTelemetryRFCEnable";
 static char *g_AdvSecSATEEnabled = "Adv_SATERFCEnable";
 static char *g_AdvSecTCPTrackerFilterDevicesEnabled = "Adv_TCPTrackerFilterDevicesRFCEnable";
 
+/* Platform synchronization primitives */
 pthread_mutex_t logMutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t logCond = PTHREAD_COND_INITIALIZER;
+key_t pubEventKey = 0;  /* Global event key for Advanced Security IPC */
+
 static BOOL logReady = FALSE;
 static char prevWanIfname[MAX_INTERFACE_SIZE] = {0};
 
@@ -210,53 +221,46 @@ int get_advSysEvent_type_from_name(char *name, enum advSysEvent_e *type_ptr)
   return 0;
 }
 
-/* Legacy function commented out for JSON-driven RBUS approach
- * This function uses CcspBaseIf_getParameterValues from common-library
- * Will be replaced with RBUS rbus_get() equivalent
- */
-#if 0
+/* Function to get Partner-based URL using RBUS */
 static BOOL Advsec_getPartnerBasedURL(char *url)
 {
-    ANSC_STATUS ret = ANSC_STATUS_FAILURE;
-    parameterValStruct_t    **valStructs = NULL;
-    char dstComponent[64]="eRT.com.cisco.spvtg.ccsp.pam";
-    char dstPath[64]="/com/cisco/spvtg/ccsp/pam";
-    char *paramNames[]={PARTNER_REDIRECTORURL_PARAMNAME};
-    int  valNum = 0;
+    rbusError_t ret = RBUS_ERROR_SUCCESS;
+    rbusValue_t value;
+    rbusHandle_t handle;
     errno_t rc = -1;
-    CcspTraceInfo(("Fetching the Redirector URL based on partnerID\n"));
+    
+    CcspTraceInfo(("Fetching the Redirector URL based on partnerID using RBUS\n"));
 
-    ret = CcspBaseIf_getParameterValues(
-            bus_handle,
-            dstComponent,
-            dstPath,
-            paramNames,
-            1,
-            &valNum,
-            &valStructs);
-
-    if(CCSP_Message_Bus_OK != ret)
-    {
-         CcspTraceError(("%s CcspBaseIf_getParameterValues %s error %lu\n", __FUNCTION__,paramNames[0],ret));
-         free_parameterValStruct_t(bus_handle, valNum, valStructs);
-         return false;
+    /* Get RBUS handle - could be global or initialized here */
+    ret = rbus_open(&handle, "AdvSecurityComponent");
+    if (ret != RBUS_ERROR_SUCCESS) {
+        CcspTraceError(("%s Failed to initialize RBUS handle: %d\n", __FUNCTION__, ret));
+        return false;
     }
-    if(strlen(valStructs[0]->parameterValue) > 0)
-    {
-        /* CID 278549: Calling risky function */
-        rc = strcpy_s(url,BUFFERSIZE_MAX-1,valStructs[0]->parameterValue);
+
+    /* Get parameter using RBUS */
+    ret = rbus_get(handle, PARTNER_REDIRECTORURL_PARAMNAME, &value);
+    if (ret != RBUS_ERROR_SUCCESS) {
+        CcspTraceError(("%s rbus_get %s error %d\n", __FUNCTION__, PARTNER_REDIRECTORURL_PARAMNAME, ret));
+        rbus_close(handle);
+        return false;
+    }
+
+    const char* paramValue = rbusValue_GetString(value, NULL);
+    if (paramValue && strlen(paramValue) > 0) {
+        rc = strcpy_s(url, BUFFERSIZE_MAX-1, paramValue);
         ERR_CHK(rc);
-        CcspTraceInfo(("%s Returned URL for the partner = %s\n",__FUNCTION__, url));
-        free_parameterValStruct_t(bus_handle, valNum, valStructs);
+        CcspTraceInfo(("%s Returned URL for the partner = %s\n", __FUNCTION__, url));
+        rbusValue_Release(value);
+        rbus_close(handle);
         return true;
-    }
-    else
-    {
+    } else {
         CcspTraceError(("%s Empty URL, go with defaults\n", __FUNCTION__));
+        rbusValue_Release(value);
+        rbus_close(handle);
         return false;
     }
 }
-#endif
 
 static BOOL Is_Device_Finger_Print_Enabled()
 {
@@ -1140,7 +1144,7 @@ CosaSecurityInitialize
     {
         CcspTraceError(("CcspAdvSecurity: Unable to get HardwareVersion\n"));
     }
-
+#if (_COSA_BCM_MIPS_ || _COSA_DRG_TPG_ || CONFIG_CISCO)
     if(strlen(CONFIG_VENDOR_NAME) > 0)
     {
         rc = strcpy_s(manufacturer, sizeof(manufacturer), CONFIG_VENDOR_NAME);
@@ -1154,7 +1158,7 @@ CosaSecurityInitialize
     {
         CcspTraceError(("CcspAdvSecurity: Unable to get Manufacturer Name\n"));
     }
-
+#endif
 #if defined(_COSA_BCM_MIPS_)
     if( dpoe_getOnuId(&tDpoe_Mac) == 0)
     {

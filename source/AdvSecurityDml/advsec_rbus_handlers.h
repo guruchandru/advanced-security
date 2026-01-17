@@ -28,10 +28,13 @@ rbusError_t advsec_rbus_get_handler(rbusHandle_t handle, rbusProperty_t property
 /* RBUS set handler for advanced security parameters */
 rbusError_t advsec_rbus_set_handler(rbusHandle_t handle, rbusProperty_t property, rbusSetHandlerOptions_t* opts);
 
+/* RBUS event handler for advanced security */
+rbusError_t advsec_rbus_event_handler(rbusHandle_t handle, rbusEvent_t const* event, rbusEventSubscription_t* subscription);
+
 /* Initialize RBUS for advanced security */
 int advsec_rbus_init(const char *component_name);
 
 /* Terminate RBUS for advanced security */
-void advsec_rbus_terminate(void);
+int advsec_rbus_terminate(void);
 
 #endif /* ADVSEC_RBUS_HANDLERS_H */

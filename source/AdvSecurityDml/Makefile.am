@@ -25,15 +25,14 @@ AM_CPPFLAGS = -Wall -Werror
 ACLOCAL_AMFLAGS = -I m4
 hardware_platform = i686-linux-gnu
 
-lib_LTLIBRARIES = libdmlasecurity.la
-libdmlasecurity_la_CPPFLAGS = -I$(top_srcdir)/include -I$(top_srcdir)/source/AdvSecurityDml -I$(top_srcdir)/source/AdvSecuritySsp $(CPPFLAGS) -I$(top_srcdir)/../Utopia/source/include/sysevent -I${PKG_CONFIG_SYSROOT_DIR}$(includedir)/rbus -I${PKG_CONFIG_SYSROOT_DIR}$(includedir)/cjson
-libdmlasecurity_la_SOURCES = plugin_main.c cosa_adv_security_internal.c cosa_adv_security_dml.c cosa_adv_security_webconfig.c advsecurity_helpers.c advsecurity_param.c advsec_bus_json_decode.c advsec_rbus_handlers.c
-# Legacy ccsp_common lines commented out for JSON-driven RBUS approach
-#libdmlasecurity_la_LDFLAGS = -lccsp_common -lsyscfg -lsysevent -lwebconfig_framework -lmsgpackc -ltrower-base64 -lsecure_wrapper -lrbus $(SSP_LDFLAGS)
-libdmlasecurity_la_LDFLAGS = -lsyscfg -lsysevent -lwebconfig_framework -lmsgpackc -ltrower-base64 -lsecure_wrapper -lrbus -lcjson $(SSP_LDFLAGS)
+# DML library disabled to avoid cyclic dependencies - all sources now compiled directly into SSP
+#lib_LTLIBRARIES = libdmlasecurity.la
+#libdmlasecurity_la_CPPFLAGS = -I$(top_srcdir)/include -I$(top_srcdir)/source/AdvSecurityDml -I$(top_srcdir)/source/AdvSecuritySsp $(CPPFLAGS) -I$(top_srcdir)/../Utopia/source/include/sysevent -I${PKG_CONFIG_SYSROOT_DIR}$(includedir)/rbus -I${PKG_CONFIG_SYSROOT_DIR}$(includedir)/cjson
+#libdmlasecurity_la_SOURCES = cosa_adv_security_internal.c cosa_adv_security_dml.c cosa_adv_security_webconfig.c advsecurity_helpers.c advsecurity_param.c
+#libdmlasecurity_la_LDFLAGS = -lsyscfg -lsysevent -lwebconfig_framework -lmsgpackc -ltrower-base64 -lsecure_wrapper -lrbus -lcjson $(SSP_LDFLAGS)
 
-if WIFI_DATA_COLLECTION
-libdmlasecurity_la_CPPFLAGS += -DDML_SUPPORT -DNON_PRIVILEGED -DWIFI_DATA_COLLECTION
-libdmlasecurity_la_SOURCES += cujoagent_dcl_api.c
-libdmlasecurity_la_LDFLAGS += -lwifi_webconfig
-endif
+#if WIFI_DATA_COLLECTION
+#libdmlasecurity_la_CPPFLAGS += -DDML_SUPPORT -DNON_PRIVILEGED -DWIFI_DATA_COLLECTION
+#libdmlasecurity_la_SOURCES += cujoagent_dcl_api.c
+#libdmlasecurity_la_LDFLAGS += -lwifi_webconfig
+#endif

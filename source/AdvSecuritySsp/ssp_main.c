@@ -29,7 +29,14 @@
 #include "breakpad_wrapper.h"
 #endif
 #include "stdlib.h"
-#include "webconfig_framework.h"
+/* WebConfig framework - skip if causes compilation issues */
+#if defined(FEATURE_SUPPORT_WEBCONFIG) && !defined(SKIP_WEBCONFIG_FOR_BUILD)
+    /* Force disable CCSP support for RBUS-only builds */
+    #ifdef CCSP_SUPPORT_ENABLED
+        #undef CCSP_SUPPORT_ENABLED
+    #endif
+    #include "webconfig_framework.h"
+#endif
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <errno.h>
@@ -44,29 +51,6 @@
 #define ADVSEC_AGENT_PROC_NAME "cujo-agent"
 #define ADVSEC_LOG_FILE "/rdklogs/logs/advsec_test.log"
 #define NUM_SUBSYSTEM_TYPES (sizeof(gSubsystem_type_table)/sizeof(gSubsystem_type_table[0]))
-
-/* Global log file handle */
-FILE* g_advsec_logfile = NULL;
-
-/* Initialize logging to file */
-static void init_advsec_logging(void) {
-    /* Create directory if it doesn't exist */
-    if (mkdir("/rdklogs", 0755) != 0 && errno != EEXIST) {
-        fprintf(stderr, "Failed to create /rdklogs directory: %s\n", strerror(errno));
-    }
-    if (mkdir("/rdklogs/logs", 0755) != 0 && errno != EEXIST) {
-        fprintf(stderr, "Failed to create /rdklogs/logs directory: %s\n", strerror(errno));
-    }
-    
-    /* Open log file */
-    g_advsec_logfile = fopen(ADVSEC_LOG_FILE, "a");
-    if (!g_advsec_logfile) {
-        fprintf(stderr, "Failed to open log file %s: %s\n", ADVSEC_LOG_FILE, strerror(errno));
-    } else {
-        fprintf(g_advsec_logfile, "\n=== Advanced Security Log Started ===\n");
-        fflush(g_advsec_logfile);
-    }
-}
 
 /* Initialize logging to file */
 static void init_advsec_logging(void) {
@@ -153,7 +137,6 @@ int  cmd_dispatch(int  command)
     /* parameterValStruct_t**          ppReturnVal        = NULL; */
     /* int                             ulReturnValCount   = 0; */
     /* int                             i                  = 0; */
-    ANSC_STATUS                     returnStatus       = ANSC_STATUS_SUCCESS;
 
     switch ( command )
     {
@@ -432,7 +415,6 @@ void drop_root(void)
 
 int main(int argc, char* argv[])
 {
-    ANSC_STATUS                     returnStatus       = ANSC_STATUS_SUCCESS;
     int                             cmdChar            = 0;
     BOOL                            bRunAsDaemon       = TRUE;
     int                             idx                = 0;

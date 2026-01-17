@@ -20,6 +20,7 @@
 
 /* Legacy platform includes commented out for JSON-driven RBUS approach */
 /* #include "ansc_platform.h" */
+#include "advsec_compat_types.h"  /* Include compatibility layer */
 #include "cosa_adv_security_internal.h"
 #include "cosa_adv_security_webconfig.h"
 #include "syslog.h"

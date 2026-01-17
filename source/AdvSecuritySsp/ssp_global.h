@@ -23,8 +23,6 @@
 
 /* Compatibility types to replace common-library */
 #include "../AdvSecurityDml/advsec_compat_types.h"
-/* SafecLib compatibility functions */
-#include "../AdvSecurityDml/advsec_safec_compat.h"
 
 /* Legacy common-library includes commented out for JSON-driven RBUS approach */
 /* #include "ansc_platform.h" */
@@ -55,8 +53,7 @@
 /*
  *  Define custom trace module ID
  */
-/* Legacy trace module ID commented out for JSON-driven RBUS approach */
-/*
+/* Legacy trace module ID commented out for JSON-driven RBUS approach
 #ifdef   ANSC_TRACE_MODULE_ID
     #undef  ANSC_TRACE_MODULE_ID
 #endif

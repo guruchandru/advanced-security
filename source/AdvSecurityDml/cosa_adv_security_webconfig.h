@@ -32,6 +32,10 @@
 /* Compatibility types to replace common-library */
 #include "advsec_compat_types.h"
 
+/* Force disable CCSP support for RBUS-only builds */
+#ifdef CCSP_SUPPORT_ENABLED
+    #undef CCSP_SUPPORT_ENABLED
+#endif
 #include "webconfig_framework.h"
 #include "advsecurity_param.h"
 

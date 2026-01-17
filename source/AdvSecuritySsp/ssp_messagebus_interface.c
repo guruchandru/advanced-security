@@ -32,6 +32,11 @@
 
 **********************************************************************/
 
+/* Compatibility includes to replace common-library */
+#include "../AdvSecurityDml/advsec_compat_types.h"
+#include "../AdvSecurityDml/advsec_rbus_handlers.h"  /* RBUS handlers */
+#include <rbus/rbus.h>  /* RBUS API */
+
 #include "ssp_global.h"
 
 
@@ -50,8 +55,8 @@ ssp_AdvsecMbi_MessageBusEngage
         char * path
     )
 {
+    (void)config_file; /* Unused parameter */
     /* ANSC_STATUS                 returnStatus       = ANSC_STATUS_SUCCESS; */
-    void*                       bus_handle         = NULL;  /* RBUS handle placeholder */
     /* Legacy CCSP_Base_Func_CB will be replaced with RBUS method handlers */
     #if 0
     CCSP_Base_Func_CB           cb                 = {0};
@@ -88,16 +93,29 @@ ssp_AdvsecMbi_MessageBusEngage
     }
     ssp_AdvsecMbi_WaitConditionReady(bus_handle, CCSP_DBUS_PSM, CCSP_DBUS_PATH_PSM, component_id);
     #endif
-    CcspTraceInfo(("!!! Connected to message bus... bus_handle: 0x%8p !!!\n", bus_handle));
+    /* RBUS initialization - replaces legacy DBUS */
+    rbusError_t ret = rbus_open((rbusHandle_t*)&bus_handle, component_id);
+    if (ret != RBUS_ERROR_SUCCESS) {
+        CcspTraceError(("Advanced Security: Failed to open RBUS connection: %d\n", ret));
+        return ANSC_STATUS_FAILURE;
+    }
+    
+    CcspTraceInfo(("Advanced Security: RBUS connection established: %s\n", component_id));
     g_MessageBusHandle_Irep = bus_handle;
     rc = strcpy_s(g_SubSysPrefix_Irep, sizeof(g_SubSysPrefix_Irep), g_Subsystem);
     if(rc != EOK)
     {
          ERR_CHK(rc);
+         rbus_close((rbusHandle_t)bus_handle);
          return ANSC_STATUS_FAILURE;
     }
 
-    CCSP_Msg_SleepInMilliSeconds(1000);
+    /* Initialize Advanced Security RBUS handlers with JSON pattern */
+    if (advsec_rbus_init(component_id) != 0) {
+        CcspTraceError(("Failed to initialize Advanced Security RBUS handlers\n"));
+        rbus_close((rbusHandle_t)bus_handle);
+        return ANSC_STATUS_FAILURE;
+    }
 
     /* Legacy callback structure assignments will be replaced with RBUS method handlers */
     #if 0
@@ -121,34 +139,30 @@ ssp_AdvsecMbi_MessageBusEngage
     /*Componet Health*/
     cb.getHealth              = ssp_AdvsecMbi_GetHealth;
 
-    /* Legacy messagebus callback registrations will be replaced with RBUS method registrations (CcspBaseIf_SetCallback -> rbus_registerMethod(), CcspBaseIf_Register_Event -> rbus_subscribeToEvent()) */
-    CcspBaseIf_SetCallback(bus_handle, &cb);
-
-
-
-    /* Register event/signal */
-    returnStatus =
-        CcspBaseIf_Register_Event
-            (
-                bus_handle,
-                0,
-                "currentSessionIDSignal"
-            );
-
-    if ( returnStatus != CCSP_Message_Bus_OK )
-    {
-        CcspTraceError((" !!! CCSP_Message_Bus_Register_Event: CurrentSessionIDSignal ERROR returnStatus: %lu!!!\n", returnStatus));
-
-        return returnStatus;
+    /* RBUS event subscription - replaces DBUS event registration */
+    ret = rbusEvent_Subscribe((rbusHandle_t)bus_handle, "Device.WiFi.WebConfig.Data.Subdoc.North", 
+                               advsec_rbus_event_handler, NULL, NULL);
+    if (ret != RBUS_ERROR_SUCCESS) {
+        CcspTraceWarning(("Failed to subscribe to WiFi WebConfig event: %s\n", rbusError_ToString(ret)));
+        /* Continue without WebConfig events - not critical */
+    } else {
+        CcspTraceInfo(("Advanced Security subscribed to WiFi WebConfig events\n"));
     }
-    #endif
-
+    
+    /* Subscribe to device configuration events */
+    ret = rbusEvent_Subscribe((rbusHandle_t)bus_handle, "Device.DeviceInfo.X_COMCAST-COM_xOpsDeviceMgmt.RPC.RebootDevice", 
+                               advsec_rbus_event_handler, NULL, NULL);
+    if (ret != RBUS_ERROR_SUCCESS) {
+        CcspTraceWarning(("Failed to subscribe to device management event: %s\n", rbusError_ToString(ret)));
+        /* Continue without device management events - not critical */
+    } else {
+        CcspTraceInfo(("Advanced Security subscribed to device management events\n"));
+    }
+#endif
     return ANSC_STATUS_SUCCESS;
 }
 
-
-#endif
-
+__attribute__((unused))
 int
 ssp_AdvsecMbi_Initialize
     (
@@ -158,12 +172,13 @@ ssp_AdvsecMbi_Initialize
     UNREFERENCED_PARAMETER(user_data);
     ANSC_STATUS             returnStatus    = ANSC_STATUS_SUCCESS;
 
-    CcspTraceInfo(("In %s()\n", __FUNCTION__));
+    CcspTraceInfo(("In ssp_AdvsecMbi_Initialize()\n"));
 
     /* CID 63136 Logically dead code */
     return returnStatus;
 }
 
+__attribute__((unused))
 int
 ssp_AdvsecMbi_Finalize
     (
@@ -173,13 +188,14 @@ ssp_AdvsecMbi_Finalize
     UNREFERENCED_PARAMETER(user_data);
     ANSC_STATUS             returnStatus    = ANSC_STATUS_SUCCESS;
 
-    CcspTraceInfo(("In %s()\n", __FUNCTION__));
+    CcspTraceInfo(("In ssp_AdvsecMbi_Finalize()\n"));
 
     /* CID 71564: Logically dead code */
     return returnStatus;
 }
 
 
+__attribute__((unused))
 int
 ssp_AdvsecMbi_Buscheck
     (
@@ -187,11 +203,12 @@ ssp_AdvsecMbi_Buscheck
     )
 {
     UNREFERENCED_PARAMETER(user_data);
-    CcspTraceInfo(("In %s()\n", __FUNCTION__));
+    CcspTraceInfo(("In ssp_AdvsecMbi_Buscheck()\n"));
 
     return 0;
 }
 
+__attribute__((unused))
 int
 ssp_AdvsecMbi_FreeResources
     (
@@ -203,9 +220,11 @@ ssp_AdvsecMbi_FreeResources
     UNREFERENCED_PARAMETER(priority);
     ANSC_STATUS             returnStatus    = ANSC_STATUS_SUCCESS;
 
-    CcspTraceInfo(("In %s()\n", __FUNCTION__));
+    CcspTraceInfo(("In ssp_AdvsecMbi_FreeResources()\n"));
 
     /* CID 67240: Logically dead code */
     return returnStatus;
 }
 
+
+#endif /* _ANSC_LINUX */

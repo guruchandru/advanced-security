@@ -17,7 +17,7 @@
 /* Legacy ccsp_trace macros replaced by advsec_compat_types.h */
 /* #include "ccsp_trace.h" */
 #include "secure_wrapper.h"
-#include "user_base.h"
+#include "advsecurity_user_base.h"
 
 #include <rbus.h>
 #include "wifi_webconfig.h"

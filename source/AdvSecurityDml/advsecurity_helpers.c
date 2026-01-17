@@ -19,6 +19,7 @@
 #include <errno.h>
 #include <string.h>
 #include <msgpack.h>
+#include "advsec_compat_types.h"  /* Include compatibility layer */
 /* Legacy ccsp_trace macros replaced by advsec_compat_types.h */
 /* #include "ccsp_trace.h" */
 #include "advsecurity_helpers.h"

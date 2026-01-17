@@ -25,7 +25,6 @@
 #include <string.h>
 #include <syslog.h>
 
-#define JSON_CONFIG_PATH "advsec_dml_config.json"
 #define MAX_PARAM_NAME_LEN 256
 
 typedef struct {
@@ -55,7 +54,7 @@ static int register_parameter(rbusHandle_t handle, const char *param_name, rbusV
 {
     rbusDataElement_t dataElement;
 
-    dataElement.name = param_name;
+    dataElement.name = (char *)param_name;  /* Cast to remove const qualifier */
     dataElement.type = RBUS_ELEMENT_TYPE_PROPERTY;
     dataElement.cbTable.getHandler = advsec_rbus_get_handler;
     
@@ -69,7 +68,7 @@ static int register_parameter(rbusHandle_t handle, const char *param_name, rbusV
 
     rbusError_t rc = rbus_regDataElements(handle, 1, &dataElement);
     if (rc != RBUS_ERROR_SUCCESS) {
-        fprintf(stderr, "Failed to register parameter %s: %d\n", param_name, rc);
+        fprintf(stderr, "Failed to register parameter %s: %s\n", param_name, rbusError_ToString(rc));
         return -1;
     }
 
@@ -78,6 +77,8 @@ static int register_parameter(rbusHandle_t handle, const char *param_name, rbusV
 
 static int process_list_of_def(rbusHandle_t handle, cJSON *list_of_def, const char *parent_path, cJSON *definitions)
 {
+    UNREFERENCED_PARAMETER(definitions);  /* Parameter not used in current implementation */
+    
     if (!cJSON_IsArray(list_of_def)) {
         fprintf(stderr, "List_Of_Def is not an array for %s\n", parent_path);
         return -1;

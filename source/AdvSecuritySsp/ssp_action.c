@@ -45,6 +45,8 @@
 **********************************************************************/
 
 #include "ssp_global.h"
+/* Compatibility types to replace common-library */
+#include "../AdvSecurityDml/advsec_compat_types.h"
 /* Legacy ccsp_trace macros replaced by advsec_compat_types.h */
 /* #include "ccsp_trace.h" */
 #include <time.h>

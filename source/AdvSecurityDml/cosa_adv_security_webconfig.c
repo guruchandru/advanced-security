@@ -16,7 +16,12 @@
  * SPDX-License-Identifier: Apache-2.0
 */
 
+#include "advsec_compat_types.h"  /* Include compatibility layer */
 #include "cosa_adv_security_webconfig.h"
+/* Force disable CCSP support for RBUS-only builds */
+#ifdef CCSP_SUPPORT_ENABLED
+    #undef CCSP_SUPPORT_ENABLED
+#endif
 #include "webconfig_framework.h"
 #include <syscfg/syscfg.h>
 /* Legacy common-library includes commented out for JSON-driven RBUS approach */

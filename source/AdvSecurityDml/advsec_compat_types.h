@@ -19,6 +19,9 @@
 #ifndef _ADVSEC_COMPAT_TYPES_H_
 #define _ADVSEC_COMPAT_TYPES_H_
 
+/* Define _GNU_SOURCE for strcasestr and other GNU extensions */
+#define _GNU_SOURCE
+
 /*
  * Compatibility type definitions to replace common-library (ANSC) types
  * This allows compilation without common-library dependency
@@ -38,15 +41,125 @@
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <time.h>
-#define _GNU_SOURCE /* for strcasestr */
-#include <stdarg.h>
-#include <string.h>
-#include <errno.h>
+#include <signal.h>  /* For signal constants */
+
+/* Signal constants - ensure they are defined */
+#ifndef SIGINT
+#define SIGINT   2
+#endif
+#ifndef SIGUSR1  
+#define SIGUSR1  10
+#endif
+#ifndef SIGUSR2
+#define SIGUSR2  12
+#endif
+#ifndef SIGCHLD
+#define SIGCHLD  17
+#endif
+#ifndef SIGPIPE
+#define SIGPIPE  13
+#endif
 
 /* Additional type definitions for compatibility */
 #ifndef errno_t
 typedef int                         errno_t;
 #endif
+
+/* Safe C library constants and functions */
+#ifndef EOK
+#define EOK                         0
+#endif
+
+/* Additional SafecLib error constants */
+#ifndef ESNULLP
+#define ESNULLP                     400    /* null ptr */
+#endif
+
+#ifndef ESLEMAX  
+#define ESLEMAX                     403    /* length exceeds RSIZE_MAX */
+#endif
+
+#ifndef ESNOSPC
+#define ESNOSPC                     406    /* not enough space for dest */
+#endif
+
+#ifndef RSIZE_MAX
+#define RSIZE_MAX                   0x7FFFFFFF    /* Maximum safe string/memory size */
+#endif
+
+/* SafecLib Error Logging - based on RDK_SAFECLIB_ERR */
+#define ADVSEC_SAFECLIB_ERR(rc) \
+    printf("safeclib error at rc - %d %s %s:%d\n", (int)rc, __FILE__, __FUNCTION__, __LINE__)
+
+/* Safe C library function implementations */
+static inline errno_t sprintf_s(char *dest, size_t destsz, const char *fmt, ...) {
+    va_list args;
+    int result;
+    
+    if (!dest || !fmt || destsz == 0) return ESNULLP;
+    if (destsz > RSIZE_MAX) return ESLEMAX;
+    
+    va_start(args, fmt);
+    result = vsnprintf(dest, destsz, fmt, args);
+    va_end(args);
+    
+    if (result < 0 || (size_t)result >= destsz) {
+        if (destsz > 0) dest[0] = '\0';
+        return ESNOSPC;
+    }
+    return EOK;
+}
+
+static inline errno_t memset_s(void *dest, size_t destsz, int ch, size_t count) {
+    if (!dest || destsz == 0) return ESNULLP;
+    if (destsz > RSIZE_MAX || count > RSIZE_MAX) return ESLEMAX;
+    if (count > destsz) return ESNOSPC;
+    
+    memset(dest, ch, count);
+    return EOK;
+}
+
+static inline errno_t strcpy_s(char *dest, size_t destsz, const char *src) {
+    size_t src_len;
+    
+    if (!dest || !src || destsz == 0) return ESNULLP;
+    if (destsz > RSIZE_MAX) return ESLEMAX;
+    
+    src_len = strlen(src);
+    if (src_len >= destsz) {
+        if (destsz > 0) dest[0] = '\0';
+        return ESNOSPC;
+    }
+    
+    strcpy(dest, src);
+    return EOK;
+}
+
+static inline errno_t strcmp_s(const char *dest, size_t destsz, const char *src, int *indicator) {
+    (void)destsz;  /* Unused parameter for this implementation */
+    
+    if (!dest || !src || !indicator) return ESNULLP;
+    
+    *indicator = strcmp(dest, src);
+    return EOK;
+}
+
+static inline errno_t strcat_s(char *dest, size_t destsz, const char *src) {
+    size_t dest_len, src_len;
+    
+    if (!dest || !src || destsz == 0) return ESNULLP;
+    if (destsz > RSIZE_MAX) return ESLEMAX;
+    
+    dest_len = strlen(dest);
+    src_len = strlen(src);
+    
+    if (dest_len + src_len >= destsz) {
+        return ESNOSPC;
+    }
+    
+    strcat(dest, src);
+    return EOK;
+}
 
 /* Basic type replacements */
 #ifndef ULONG
@@ -216,8 +329,20 @@ typedef int (*COSAGetParamValueByPathNameProc)(const char*, char**);
  */
 
 /* Enhanced logging with file output and timestamp support - based on common-library */
-static FILE* g_advsec_logfile = NULL;
-static int g_advsec_trace_level = 6; /* Default to INFO level */
+extern FILE* g_advsec_logfile;
+extern int g_advsec_trace_level; 
+
+/* CCSP global variables - matching common-library */
+extern int g_iTraceLevel; /* Defined in ssp_action.c */
+extern char *pComponentName;
+
+/* CCSP MessageBus globals - for legacy compatibility */
+extern void* g_MessageBusHandle_Irep;  /* Not defined in existing code */
+extern char g_SubSysPrefix_Irep[32];   /* Not defined in existing code */
+
+/* RBUS function declarations */
+extern int advsec_rbus_init(const char *component_name);
+extern int advsec_rbus_terminate(void);
 
 /* CCSP Trace Levels - matching common-library definitions */
 #ifndef CCSP_TRACE_LEVEL_EMERGENCY
@@ -276,95 +401,119 @@ static inline void advsec_trace_init(const char* component_name) {
 static inline void advsec_log_write_with_level(int level, const char* format, ...) {
     if (level > g_advsec_trace_level || level < 0 || level > 7) return;
     
-    va_list args1, args2;
+    va_list args;
     time_t rawtime;
     struct tm* timeinfo;
-    char timestamp[64];
+    char timestamp[32];
     
-    /* Get current timestamp */
+    /* Get current timestamp - matching common-library format */
     time(&rawtime);
     timeinfo = localtime(&rawtime);
-    strftime(timestamp, sizeof(timestamp), "%Y-%m-%d %H:%M:%S", timeinfo);
+    snprintf(timestamp, sizeof(timestamp), "%.4d-%.2d-%.2dT%.2d:%.2d:%.2d",
+            timeinfo->tm_year + 1900, timeinfo->tm_mon + 1, timeinfo->tm_mday,
+            timeinfo->tm_hour, timeinfo->tm_min, timeinfo->tm_sec);
     
-    /* Prepare arguments for both stdout and file */
-    va_start(args1, format);
-    va_copy(args2, args1);
+    /* Print in CCSP format: timestamp-component-level-message */
+    fprintf(stderr, "%s-AdvSec-%s-", timestamp, g_advsec_TraceLevelStr[level]);
     
-    /* Write to stdout with timestamp and level */
-    fprintf(stdout, "[%s] [%s] ", timestamp, g_advsec_TraceLevelStr[level]);
-    vfprintf(stdout, format, args1);
-    if (format[strlen(format)-1] != '\n') {
-        fprintf(stdout, "\n");
-    }
-    fflush(stdout);
+    va_start(args, format);
+    vfprintf(stderr, format, args);
+    va_end(args);
     
-    /* Write to log file if open */
+    /* Also write to log file if available */
     if (g_advsec_logfile) {
-        fprintf(g_advsec_logfile, "[%s] [%s] ", timestamp, g_advsec_TraceLevelStr[level]);
-        vfprintf(g_advsec_logfile, format, args2);
-        if (format[strlen(format)-1] != '\n') {
-            fprintf(g_advsec_logfile, "\n");
-        }
+        fprintf(g_advsec_logfile, "%s-AdvSec-%s-", timestamp, g_advsec_TraceLevelStr[level]);
+        va_start(args, format);
+        vfprintf(g_advsec_logfile, format, args);
+        va_end(args);
         fflush(g_advsec_logfile);
     }
-    
-    va_end(args1);
-    va_end(args2);
 }
 
 /* Simple log write for backward compatibility */
 static inline void advsec_log_write(const char* level, const char* format, ...) {
-    va_list args1, args2;
-    va_start(args1, format);
-    va_copy(args2, args1);
+    va_list args;
+    va_start(args, format);
     
     /* Write to console */
     fprintf(stdout, "[%s] ", level);
-    vfprintf(stdout, format, args1);
+    vfprintf(stdout, format, args);
     fflush(stdout);
     
-    /* Write to log file if open */
-    if (g_advsec_logfile) {
-        fprintf(g_advsec_logfile, "[%s] ", level);
-        vfprintf(g_advsec_logfile, format, args2);
-        fflush(g_advsec_logfile);
-    }
-    
-    va_end(args1);
-    va_end(args2);
+    va_end(args);
 }
 
+/* CCSP Trace Macros - Exact format matching common-library ccsp_trace.h
+ * These macros expect double parentheses: CcspTraceError(("message %s", arg))
+ * The outer parentheses are part of the macro, inner parentheses contain format and args
+ */
+
 #ifndef CcspTraceError
-#define CcspTraceError(...) advsec_log_write_with_level(CCSP_TRACE_LEVEL_ERROR, __VA_ARGS__)
+#define CcspTraceError(msg) advsec_ccsp_trace_exec(CCSP_TRACE_LEVEL_ERROR, msg)
 #endif
 
 #ifndef CcspTraceWarning  
-#define CcspTraceWarning(...) advsec_log_write_with_level(CCSP_TRACE_LEVEL_WARNING, __VA_ARGS__)
+#define CcspTraceWarning(msg) advsec_ccsp_trace_exec(CCSP_TRACE_LEVEL_WARNING, msg)
 #endif
 
 #ifndef CcspTraceInfo
-#define CcspTraceInfo(...) advsec_log_write_with_level(CCSP_TRACE_LEVEL_INFO, __VA_ARGS__)
+#define CcspTraceInfo(msg) advsec_ccsp_trace_exec(CCSP_TRACE_LEVEL_INFO, msg)
 #endif
 
 #ifndef CcspTraceDebug
-#define CcspTraceDebug(...) advsec_log_write_with_level(CCSP_TRACE_LEVEL_DEBUG, __VA_ARGS__)
+#define CcspTraceDebug(msg) advsec_ccsp_trace_exec(CCSP_TRACE_LEVEL_DEBUG, msg)
 #endif
 
 #ifndef CcspTraceNotice
-#define CcspTraceNotice(...) advsec_log_write_with_level(CCSP_TRACE_LEVEL_NOTICE, __VA_ARGS__)
+#define CcspTraceNotice(msg) advsec_ccsp_trace_exec(CCSP_TRACE_LEVEL_NOTICE, msg)
 #endif
 
 #ifndef CcspTraceCritical
-#define CcspTraceCritical(...) advsec_log_write_with_level(CCSP_TRACE_LEVEL_CRITICAL, __VA_ARGS__)
+#define CcspTraceCritical(msg) advsec_ccsp_trace_exec(CCSP_TRACE_LEVEL_CRITICAL, msg)
 #endif
 
 #ifndef CcspTraceAlert
-#define CcspTraceAlert(...) advsec_log_write_with_level(CCSP_TRACE_LEVEL_ALERT, __VA_ARGS__)
+#define CcspTraceAlert(msg) advsec_ccsp_trace_exec(CCSP_TRACE_LEVEL_ALERT, msg)
 #endif
 
 #ifndef CcspTraceEmergency
-#define CcspTraceEmergency(...) advsec_log_write_with_level(CCSP_TRACE_LEVEL_EMERGENCY, __VA_ARGS__)
+#define CcspTraceEmergency(msg) advsec_ccsp_trace_exec(CCSP_TRACE_LEVEL_EMERGENCY, msg)
 #endif
+
+/* Macro to extract arguments from double parentheses and execute trace */
+#define advsec_ccsp_trace_exec(level, msg) \
+    do { \
+        if ((level) <= g_iTraceLevel) { \
+            advsec_ccsp_log_write((level), ADVSEC_EXTRACT_ARGS msg); \
+        } \
+    } while(0)
+
+/* Helper macro to extract arguments from parentheses */
+#define ADVSEC_EXTRACT_ARGS(...) __VA_ARGS__
+
+/* CCSP-compatible logging function */
+static inline void advsec_ccsp_log_write(int level, const char* format, ...) {
+    if (level > g_iTraceLevel || level < 0 || level > 7) return;
+    
+    va_list args;
+    time_t rawtime;
+    struct tm* timeinfo;
+    char timestamp[80];
+    
+    /* Get current timestamp - matching common-library format */
+    time(&rawtime);
+    timeinfo = localtime(&rawtime);
+    snprintf(timestamp, sizeof(timestamp), "%.4d-%.2d-%.2dT%.2d:%.2d:%.2d",
+            timeinfo->tm_year + 1900, timeinfo->tm_mon + 1, timeinfo->tm_mday,
+            timeinfo->tm_hour, timeinfo->tm_min, timeinfo->tm_sec);
+    
+    /* Print in CCSP format: timestamp-component-level-message */
+    fprintf(stderr, "%s-%s-%s-", timestamp, pComponentName ? pComponentName : "AdvSec", g_advsec_TraceLevelStr[level]);
+    
+    va_start(args, format);
+    vfprintf(stderr, format, args);
+    va_end(args);
+}
 
 /* Additional ANSC trace/debug functions - no-op implementations */
 #ifndef AnscTraceWarning
@@ -374,14 +523,22 @@ static inline void advsec_log_write(const char* level, const char* format, ...) 
 #ifndef AnscSetTraceLevel
 #define AnscSetTraceLevel(level) do { \
     g_advsec_trace_level = (level); \
+    g_iTraceLevel = (level); \
     if (g_advsec_trace_level < 0) g_advsec_trace_level = 0; \
     if (g_advsec_trace_level > 7) g_advsec_trace_level = 7; \
+    if (g_iTraceLevel < 0) g_iTraceLevel = 0; \
+    if (g_iTraceLevel > 7) g_iTraceLevel = 7; \
 } while(0)
 #endif
 
 #ifndef AnscGetTraceLevel
-#define AnscGetTraceLevel() (g_advsec_trace_level)
+#define AnscGetTraceLevel() (g_iTraceLevel)
 #endif
+
+/* Additional CCSP compatible functions */
+static inline void AnscSetTraceLevel_func(int level) {
+    AnscSetTraceLevel(level);
+}
 
 /* DSLH MPA Access Control Constants */
 #ifndef DSLH_MPA_ACCESS_CONTROL_ACS
@@ -464,7 +621,7 @@ typedef struct _COMPONENT_COMMON_DM {
 /* String utility functions provided as static inline functions */
 
 /* CCSP Message Bus utility functions */
-static inline void CCSP_Msg_SleepInMilliSeconds(int milliseconds) {
+static inline void CCSP_Msg_SleepInMilliSeconds(unsigned int milliseconds) {
     usleep(milliseconds * 1000);
 }
 
@@ -528,16 +685,6 @@ static inline int AnscEqualString(const char* pString1, const char* pString2, in
         return (strcmp(pString1, pString2) == 0);
     } else {
         return (strcasecmp(pString1, pString2) == 0);
-    }
-}
-
-static inline char* AnscSearchSubString(const char* pString, const char* pSubString, int bCaseSensitive) {
-    if (!pString || !pSubString) return NULL;
-    
-    if (bCaseSensitive) {
-        return strstr(pString, pSubString);
-    } else {
-        return strcasestr(pString, pSubString);
     }
 }
 
