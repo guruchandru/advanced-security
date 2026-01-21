@@ -26,12 +26,11 @@
 #include <syslog.h>
 
 #define MAX_PARAM_NAME_LEN 256
+#define MAX_PARAMS 100
 
-typedef struct {
-    char param_name[MAX_PARAM_NAME_LEN];
-    rbusValueType_t data_type;
-    bool writable;
-} advsec_param_info_t;
+/* Global parameter metadata storage */
+static advsec_param_metadata_t *g_param_metadata[MAX_PARAMS] = {0};
+static int g_param_count = 0;
 
 static rbusValueType_t get_rbus_type_from_string(const char *type_str)
 {
@@ -65,6 +64,39 @@ static int register_parameter(rbusHandle_t handle, const char *param_name, rbusV
     }
 
     fprintf(stderr, "Registering parameter: %s (type=%d, writable=%d)\n", param_name, type, writable);
+
+    /* Store parameter metadata for dynamic routing */
+    if (g_param_count < MAX_PARAMS) {
+        advsec_param_metadata_t *metadata = (advsec_param_metadata_t *)malloc(sizeof(advsec_param_metadata_t));
+        if (metadata) {
+            metadata->full_param_name = strdup(param_name);
+            metadata->data_type = type;
+            metadata->writable = writable;
+            
+            /* Extract short parameter name (last component after final '.') */
+            const char *last_dot = strrchr(param_name, '.');
+            metadata->short_param_name = last_dot ? strdup(last_dot + 1) : strdup(param_name);
+            
+            /* Extract parent object name (component before short name) */
+            char parent_buf[MAX_PARAM_NAME_LEN] = {0};
+            const char *second_last_dot = NULL;
+            if (last_dot) {
+                size_t parent_len = last_dot - param_name;
+                if (parent_len > 0 && parent_len < MAX_PARAM_NAME_LEN) {
+                    strncpy(parent_buf, param_name, parent_len);
+                    parent_buf[parent_len] = '\0';
+                    second_last_dot = strrchr(parent_buf, '.');
+                }
+            }
+            metadata->parent_object = second_last_dot ? strdup(second_last_dot + 1) : strdup("");
+            
+            g_param_metadata[g_param_count++] = metadata;
+            fprintf(stderr, "  Stored metadata: short_name='%s', parent='%s'\n", 
+                    metadata->short_param_name, metadata->parent_object);
+        }
+    } else {
+        fprintf(stderr, "Warning: Maximum parameter limit (%d) reached\n", MAX_PARAMS);
+    }
 
     rbusError_t rc = rbus_regDataElements(handle, 1, &dataElement);
     if (rc != RBUS_ERROR_SUCCESS) {
@@ -191,6 +223,39 @@ int advsec_decode_json_config(rbusHandle_t handle, const char *json_file_path)
     cJSON_Delete(root);
     free(json_buffer);
 
-    fprintf(stderr, "Advanced Security JSON config processing complete\n");
+    fprintf(stderr, "Advanced Security JSON config processing complete (%d parameters registered)\n", g_param_count);
     return 0;
+}
+
+/* Lookup parameter metadata by full parameter name */
+advsec_param_metadata_t* advsec_get_param_metadata(const char *param_name)
+{
+    if (!param_name) {
+        return NULL;
+    }
+
+    for (int i = 0; i < g_param_count; i++) {
+        if (g_param_metadata[i] && g_param_metadata[i]->full_param_name) {
+            if (strcmp(g_param_metadata[i]->full_param_name, param_name) == 0) {
+                return g_param_metadata[i];
+            }
+        }
+    }
+
+    return NULL;
+}
+
+/* Cleanup parameter metadata storage */
+void advsec_cleanup_param_metadata(void)
+{
+    for (int i = 0; i < g_param_count; i++) {
+        if (g_param_metadata[i]) {
+            free(g_param_metadata[i]->full_param_name);
+            free(g_param_metadata[i]->short_param_name);
+            free(g_param_metadata[i]->parent_object);
+            free(g_param_metadata[i]);
+            g_param_metadata[i] = NULL;
+        }
+    }
+    g_param_count = 0;
 }
