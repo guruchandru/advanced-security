@@ -226,23 +226,21 @@ static BOOL Advsec_getPartnerBasedURL(char *url)
 {
     rbusError_t ret = RBUS_ERROR_SUCCESS;
     rbusValue_t value;
-    rbusHandle_t handle;
+    extern rbusHandle_t g_rbus_handle;
     errno_t rc = -1;
     
     CcspTraceInfo(("Fetching the Redirector URL based on partnerID using RBUS\n"));
 
-    /* Get RBUS handle - could be global or initialized here */
-    ret = rbus_open(&handle, "AdvSecurityComponent");
-    if (ret != RBUS_ERROR_SUCCESS) {
-        CcspTraceError(("%s Failed to initialize RBUS handle: %d\n", __FUNCTION__, ret));
+    /* Reuse global RBUS handle instead of opening a new connection */
+    if (!g_rbus_handle) {
+        CcspTraceError(("%s RBUS handle not initialized\n", __FUNCTION__));
         return false;
     }
 
     /* Get parameter using RBUS */
-    ret = rbus_get(handle, PARTNER_REDIRECTORURL_PARAMNAME, &value);
+    ret = rbus_get(g_rbus_handle, PARTNER_REDIRECTORURL_PARAMNAME, &value);
     if (ret != RBUS_ERROR_SUCCESS) {
         CcspTraceError(("%s rbus_get %s error %d\n", __FUNCTION__, PARTNER_REDIRECTORURL_PARAMNAME, ret));
-        rbus_close(handle);
         return false;
     }
 
@@ -252,12 +250,10 @@ static BOOL Advsec_getPartnerBasedURL(char *url)
         ERR_CHK(rc);
         CcspTraceInfo(("%s Returned URL for the partner = %s\n", __FUNCTION__, url));
         rbusValue_Release(value);
-        rbus_close(handle);
         return true;
     } else {
         CcspTraceError(("%s Empty URL, go with defaults\n", __FUNCTION__));
         rbusValue_Release(value);
-        rbus_close(handle);
         return false;
     }
 }
@@ -1083,11 +1079,13 @@ CosaSecurityInitialize
     errno_t rc = -1;
 
     int ret = RBUS_ERROR_SUCCESS;
+    extern rbusHandle_t g_rbus_handle;
 
-    ret = rbus_open(&rbus_handle, "AdvSecurityEventConsumer");
-    if(ret != RBUS_ERROR_SUCCESS)
+    /* Reuse global RBUS handle for event subscriptions */
+    rbus_handle = g_rbus_handle;
+    if(!rbus_handle)
     {
-        CcspTraceError(("AdvSecurityEventConsumer: rbus_open failed: %d\n", ret));
+        CcspTraceError(("CosaSecurityInitialize: RBUS handle not initialized\n"));
         return ANSC_STATUS_FAILURE;
     }
 #if !defined(_XER5_PRODUCT_REQ_) && !defined(_SCER11BEL_PRODUCT_REQ_) && !defined(_PLATFORM_BANANAPI_R4_)
@@ -1436,7 +1434,7 @@ CosaSecurityRemove
 
     /* Remove self */
     FreeCosaDmAgent(pMyObject);
-    rbus_close(rbus_handle);
+    /* Don't close rbus_handle here - it's owned by g_rbus_handle in advsec_rbus_handlers.c */
     CcspTraceInfo(("%s EXIT \n", __FUNCTION__));
 
     return returnStatus;

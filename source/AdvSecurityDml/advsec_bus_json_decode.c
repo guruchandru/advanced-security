@@ -26,11 +26,158 @@
 #include <syslog.h>
 
 #define MAX_PARAM_NAME_LEN 256
-#define MAX_PARAMS 100
 
-/* Global parameter metadata storage */
-static advsec_param_metadata_t *g_param_metadata[MAX_PARAMS] = {0};
-static int g_param_count = 0;
+typedef struct advsec_param_meta_node {
+    advsec_param_metadata_t meta;
+    struct advsec_param_meta_node* next;
+} advsec_param_meta_node_t;
+
+static advsec_param_meta_node_t* g_meta_head = NULL;
+
+static advsec_namespace_t classify_namespace(const char* full_name)
+{
+    if (!full_name) return ADVSEC_NAMESPACE_UNKNOWN;
+    
+    if (strstr(full_name, "DeviceFingerPrint") && !strstr(full_name, "RFC"))
+        return ADVSEC_NAMESPACE_DEVICE_FINGERPRINT;
+    if (strstr(full_name, "AdvancedSecurity") && strstr(full_name, "Data"))
+        return ADVSEC_NAMESPACE_ADVANCED_SECURITY;
+    if (strstr(full_name, "SafeBrowsing") && !strstr(full_name, "RFC"))
+        return ADVSEC_NAMESPACE_SAFEBROWSING;
+    if (strstr(full_name, "Softflowd"))
+        return ADVSEC_NAMESPACE_SOFTFLOWD;
+    if (strstr(full_name, "AdvancedParentalControl") && !strstr(full_name, "RFC"))
+        return ADVSEC_NAMESPACE_PARENTAL_CONTROL;
+    if (strstr(full_name, "PrivacyProtection") && !strstr(full_name, "RFC"))
+        return ADVSEC_NAMESPACE_PRIVACY_PROTECTION;
+    if (strstr(full_name, "RFC.Feature.RabidFramework"))
+        return ADVSEC_NAMESPACE_RFC_RABIDFRAMEWORK;
+    if (strstr(full_name, "RFC.Feature.AdvancedParentalControl"))
+        return ADVSEC_NAMESPACE_RFC_ADVANCED_PARENTAL_CONTROL;
+    if (strstr(full_name, "RFC.Feature.PrivacyProtection"))
+        return ADVSEC_NAMESPACE_RFC_PRIVACY_PROTECTION;
+    if (strstr(full_name, "RFC.Feature.DeviceFingerPrintICMPv6"))
+        return ADVSEC_NAMESPACE_RFC_DEVICE_FINGERPRINT_ICMPV6;
+    if (strstr(full_name, "RFC.Feature.WS-Discovery_Analysis"))
+        return ADVSEC_NAMESPACE_RFC_WS_DISCOVERY_ANALYSIS;
+    if (strstr(full_name, "RFC.Feature.AdvancedSecurityOTM"))
+        return ADVSEC_NAMESPACE_RFC_ADVANCED_SECURITY_OTM;
+    if (strstr(full_name, "RFC.Feature.AdvanceSecurityUserSpace"))
+        return ADVSEC_NAMESPACE_RFC_ADVANCED_SECURITY_USERSPACE;
+    if (strstr(full_name, "RFC.Feature.AdvanceSecurityCujoTracer"))
+        return ADVSEC_NAMESPACE_RFC_ADVANCED_SECURITY_CUJOTRACER;
+    if (strstr(full_name, "RFC.Feature.AdvanceSecurityCujoTelemetry"))
+        return ADVSEC_NAMESPACE_RFC_ADVANCED_SECURITY_CUJOTELEMETRY;
+    if (strstr(full_name, "RFC.Feature.AdvSecSentryAtTheEdge"))
+        return ADVSEC_NAMESPACE_RFC_ADVSEC_SENTRY_AT_THE_EDGE;
+    if (strstr(full_name, "RFC.Feature.AdvSecTCPTrackerFilterDevices"))
+        return ADVSEC_NAMESPACE_RFC_ADVSEC_TCP_TRACKER_FILTER_DEVICES;
+    if (strstr(full_name, "RFC.Feature.WifiDataCollection"))
+        return ADVSEC_NAMESPACE_RFC_WIFI_DATA_COLLECTION;
+    if (strstr(full_name, "RFC.Feature.Levl"))
+        return ADVSEC_NAMESPACE_RFC_LEVL;
+    if (strstr(full_name, "RFC.Feature.AdvSecAgent"))
+        return ADVSEC_NAMESPACE_RFC_ADVSEC_AGENT;
+    if (strstr(full_name, "RFC.Feature.AdvSecSafeBrowsing"))
+        return ADVSEC_NAMESPACE_RFC_ADVSEC_SAFEBROWSING;
+    if (strstr(full_name, "RFC.Feature.AdvSecCujoTelemetryWiFiFP"))
+        return ADVSEC_NAMESPACE_RFC_ADVSEC_CUJOTELEMETRY_WIFIFP;
+    if (strstr(full_name, "RFC.Feature.AdvSecAgentRaptR"))
+        return ADVSEC_NAMESPACE_RFC_ADVSEC_AGENT_RAPTR;
+    
+    return ADVSEC_NAMESPACE_UNKNOWN;
+}
+
+static advsec_param_metadata_t* advsec_meta_add(const char* full_name, rbusValueType_t type, bool writable)
+{
+    if(!full_name) return NULL;
+    
+    advsec_param_meta_node_t* n = (advsec_param_meta_node_t*)calloc(1, sizeof(*n));
+    if(!n) return NULL;
+    
+    n->meta.full_name = strdup(full_name);
+    if(!n->meta.full_name) {
+        free(n);
+        return NULL;
+    }
+    
+    const char* last_dot = strrchr(full_name, '.');
+    n->meta.short_name = last_dot ? strdup(last_dot + 1) : strdup(full_name);
+    
+    if (last_dot) {
+        size_t parent_len = last_dot - full_name;
+        n->meta.parent_namespace = strndup(full_name, parent_len);
+    } else {
+        n->meta.parent_namespace = strdup("");
+    }
+    
+    n->meta.namespace_type = classify_namespace(full_name);
+    n->meta.type = type;
+    n->meta.writable = writable;
+    n->next = g_meta_head;
+    g_meta_head = n;
+    return &n->meta;
+}
+
+advsec_param_metadata_t* advsec_find_param_metadata(const char* full_name)
+{
+    if(!full_name) return NULL;
+    for(advsec_param_meta_node_t* n = g_meta_head; n; n = n->next) {
+        if(strcmp(n->meta.full_name, full_name) == 0) return &n->meta;
+    }
+    return NULL;
+}
+
+void advsec_free_param_metadata(void)
+{
+    advsec_param_meta_node_t* n = g_meta_head;
+    while(n) {
+        advsec_param_meta_node_t* next = n->next;
+        free(n->meta.full_name);
+        free(n->meta.short_name);
+        free(n->meta.parent_namespace);
+        free(n);
+        n = next;
+    }
+    g_meta_head = NULL;
+}
+
+static char **g_registered_names = NULL;
+static size_t g_registered_names_count = 0;
+
+static const char* advsec_store_registered_name(const char *param_name)
+{
+    if (!param_name) return NULL;
+
+    char *heap_copy = strdup(param_name);
+    if (!heap_copy) {
+        fprintf(stderr, "ERROR: strdup() failed for %s\n", param_name);
+        return NULL;
+    }
+
+    char **tmp = realloc(g_registered_names,
+                         (g_registered_names_count + 1) * sizeof(char*));
+    if (!tmp) {
+        free(heap_copy);
+        fprintf(stderr, "ERROR: realloc() failed for %s\n", param_name);
+        return NULL;
+    }
+
+    g_registered_names = tmp;
+    g_registered_names[g_registered_names_count++] = heap_copy;
+    return heap_copy;
+}
+
+void advsec_free_registered_elements(void)
+{
+    for (size_t i = 0; i < g_registered_names_count; i++) {
+        free(g_registered_names[i]);
+    }
+    free(g_registered_names);
+    g_registered_names = NULL;
+    g_registered_names_count = 0;
+    fprintf(stderr, "Freed all registered RBUS element names\n");
+}
 
 static rbusValueType_t get_rbus_type_from_string(const char *type_str)
 {
@@ -49,58 +196,26 @@ static rbusValueType_t get_rbus_type_from_string(const char *type_str)
     return RBUS_NONE;
 }
 
-static int register_parameter(rbusHandle_t handle, const char *param_name, rbusValueType_t type, bool writable)
+static int register_parameter(rbusHandle_t handle, const char *param_name, rbusValueType_t type, bool writable,
+                              advsec_param_metadata_t* meta)
 {
-    rbusDataElement_t dataElement;
-
-    dataElement.name = (char *)param_name;  /* Cast to remove const qualifier */
-    dataElement.type = RBUS_ELEMENT_TYPE_PROPERTY;
-    dataElement.cbTable.getHandler = advsec_rbus_get_handler;
+    (void)type;
+    (void)meta;
     
-    if (writable) {
-        dataElement.cbTable.setHandler = advsec_rbus_set_handler;
-    } else {
-        dataElement.cbTable.setHandler = NULL;
-    }
+    rbusDataElement_t dataElement;
+    memset(&dataElement, 0, sizeof(dataElement));
 
-    fprintf(stderr, "Registering parameter: %s (type=%d, writable=%d)\n", param_name, type, writable);
+    dataElement.name = (char *)param_name;
+    dataElement.type = RBUS_ELEMENT_TYPE_PROPERTY;
+    
+    dataElement.cbTable.getHandler = advsec_rbus_get_handler;
+    dataElement.cbTable.setHandler = writable ? advsec_rbus_set_handler : NULL;
 
-    /* Store parameter metadata for dynamic routing */
-    if (g_param_count < MAX_PARAMS) {
-        advsec_param_metadata_t *metadata = (advsec_param_metadata_t *)malloc(sizeof(advsec_param_metadata_t));
-        if (metadata) {
-            metadata->full_param_name = strdup(param_name);
-            metadata->data_type = type;
-            metadata->writable = writable;
-            
-            /* Extract short parameter name (last component after final '.') */
-            const char *last_dot = strrchr(param_name, '.');
-            metadata->short_param_name = last_dot ? strdup(last_dot + 1) : strdup(param_name);
-            
-            /* Extract parent object name (component before short name) */
-            char parent_buf[MAX_PARAM_NAME_LEN] = {0};
-            const char *second_last_dot = NULL;
-            if (last_dot) {
-                size_t parent_len = last_dot - param_name;
-                if (parent_len > 0 && parent_len < MAX_PARAM_NAME_LEN) {
-                    strncpy(parent_buf, param_name, parent_len);
-                    parent_buf[parent_len] = '\0';
-                    second_last_dot = strrchr(parent_buf, '.');
-                }
-            }
-            metadata->parent_object = second_last_dot ? strdup(second_last_dot + 1) : strdup("");
-            
-            g_param_metadata[g_param_count++] = metadata;
-            fprintf(stderr, "  Stored metadata: short_name='%s', parent='%s'\n", 
-                    metadata->short_param_name, metadata->parent_object);
-        }
-    } else {
-        fprintf(stderr, "Warning: Maximum parameter limit (%d) reached\n", MAX_PARAMS);
-    }
+    fprintf(stderr, "Registering: %s (writable=%d)\n", param_name, writable);
 
     rbusError_t rc = rbus_regDataElements(handle, 1, &dataElement);
     if (rc != RBUS_ERROR_SUCCESS) {
-        fprintf(stderr, "Failed to register parameter %s: %s\n", param_name, rbusError_ToString(rc));
+        fprintf(stderr, "Failed to register %s: %s\n", param_name, rbusError_ToString(rc));
         return -1;
     }
 
@@ -138,7 +253,21 @@ static int process_list_of_def(rbusHandle_t handle, cJSON *list_of_def, const ch
         rbusValueType_t rbus_type = get_rbus_type_from_string(type_obj->valuestring);
         bool writable = writable_obj && cJSON_IsTrue(writable_obj);
 
-        register_parameter(handle, full_param_name, rbus_type, writable);
+        const char *stable_name = advsec_store_registered_name(full_param_name);
+        if (!stable_name) {
+            fprintf(stderr, "ERROR: Failed to allocate stable name for %s\n", full_param_name);
+            continue;
+        }
+
+        advsec_param_metadata_t* meta = advsec_meta_add(stable_name, rbus_type, writable);
+        if(!meta) {
+            fprintf(stderr, "ERROR: Failed to allocate metadata for %s\n", stable_name);
+            continue;
+        }
+
+        if (register_parameter(handle, stable_name, rbus_type, writable, meta) != 0) {
+            fprintf(stderr, "WARNING: Failed to register %s\n", full_param_name);
+        }
     }
 
     return 0;
@@ -223,39 +352,6 @@ int advsec_decode_json_config(rbusHandle_t handle, const char *json_file_path)
     cJSON_Delete(root);
     free(json_buffer);
 
-    fprintf(stderr, "Advanced Security JSON config processing complete (%d parameters registered)\n", g_param_count);
+    fprintf(stderr, "Advanced Security JSON config processing complete (%zu parameters registered)\n", g_registered_names_count);
     return 0;
-}
-
-/* Lookup parameter metadata by full parameter name */
-advsec_param_metadata_t* advsec_get_param_metadata(const char *param_name)
-{
-    if (!param_name) {
-        return NULL;
-    }
-
-    for (int i = 0; i < g_param_count; i++) {
-        if (g_param_metadata[i] && g_param_metadata[i]->full_param_name) {
-            if (strcmp(g_param_metadata[i]->full_param_name, param_name) == 0) {
-                return g_param_metadata[i];
-            }
-        }
-    }
-
-    return NULL;
-}
-
-/* Cleanup parameter metadata storage */
-void advsec_cleanup_param_metadata(void)
-{
-    for (int i = 0; i < g_param_count; i++) {
-        if (g_param_metadata[i]) {
-            free(g_param_metadata[i]->full_param_name);
-            free(g_param_metadata[i]->short_param_name);
-            free(g_param_metadata[i]->parent_object);
-            free(g_param_metadata[i]);
-            g_param_metadata[i] = NULL;
-        }
-    }
-    g_param_count = 0;
 }

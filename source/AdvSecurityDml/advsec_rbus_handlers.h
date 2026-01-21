@@ -21,6 +21,7 @@
 #define ADVSEC_RBUS_HANDLERS_H
 
 #include <rbus.h>
+#include "advsec_bus_json_decode.h"
 
 /* RBUS get handler for advanced security parameters */
 rbusError_t advsec_rbus_get_handler(rbusHandle_t handle, rbusProperty_t property, rbusGetHandlerOptions_t* opts);
@@ -35,6 +36,9 @@ rbusError_t advsec_rbus_event_handler(rbusHandle_t handle, rbusEvent_t const* ev
 int advsec_rbus_init(const char *component_name);
 
 /* Terminate RBUS for advanced security */
-int advsec_rbus_terminate(void);
+void advsec_rbus_terminate(void);
+
+/* RBUS callback registration function - registers get/set callbacks */
+void advsec_register_callbacks_to_metadata(advsec_param_metadata_t *metadata, const char *param_name);
 
 #endif /* ADVSEC_RBUS_HANDLERS_H */

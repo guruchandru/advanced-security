@@ -36,6 +36,7 @@
 
 #define  CCSP_COMPONENT_ID_ADVSEC                              "com.cisco.spvtg.ccsp.advsec"
 #define  CCSP_COMPONENT_NAME_ADVSEC                            "com.cisco.spvtg.ccsp.advsec"
+#define  RBUS_COMPONENT_NAME_ADVSEC                            "AdvancedSecurityComponent"
 #define  CCSP_COMPONENT_VERSION_ADVSEC                         1
 #define  CCSP_COMPONENT_PATH_ADVSEC                            "/com/cisco/spvtg/ccsp/advsec"
 

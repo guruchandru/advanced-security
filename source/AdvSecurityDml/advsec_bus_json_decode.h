@@ -26,22 +26,47 @@
 
 #define JSON_CONFIG_PATH "advsec_dml_config.json"
 
-/* Parameter metadata stored from JSON */
+typedef enum {
+    ADVSEC_NAMESPACE_DEVICE_FINGERPRINT,
+    ADVSEC_NAMESPACE_ADVANCED_SECURITY,
+    ADVSEC_NAMESPACE_SAFEBROWSING,
+    ADVSEC_NAMESPACE_SOFTFLOWD,
+    ADVSEC_NAMESPACE_PARENTAL_CONTROL,
+    ADVSEC_NAMESPACE_PRIVACY_PROTECTION,
+    ADVSEC_NAMESPACE_RFC_RABIDFRAMEWORK,
+    ADVSEC_NAMESPACE_RFC_ADVANCED_PARENTAL_CONTROL,
+    ADVSEC_NAMESPACE_RFC_PRIVACY_PROTECTION,
+    ADVSEC_NAMESPACE_RFC_DEVICE_FINGERPRINT_ICMPV6,
+    ADVSEC_NAMESPACE_RFC_WS_DISCOVERY_ANALYSIS,
+    ADVSEC_NAMESPACE_RFC_ADVANCED_SECURITY_OTM,
+    ADVSEC_NAMESPACE_RFC_ADVANCED_SECURITY_USERSPACE,
+    ADVSEC_NAMESPACE_RFC_ADVANCED_SECURITY_CUJOTRACER,
+    ADVSEC_NAMESPACE_RFC_ADVANCED_SECURITY_CUJOTELEMETRY,
+    ADVSEC_NAMESPACE_RFC_ADVSEC_SENTRY_AT_THE_EDGE,
+    ADVSEC_NAMESPACE_RFC_ADVSEC_TCP_TRACKER_FILTER_DEVICES,
+    ADVSEC_NAMESPACE_RFC_WIFI_DATA_COLLECTION,
+    ADVSEC_NAMESPACE_RFC_LEVL,
+    ADVSEC_NAMESPACE_RFC_ADVSEC_AGENT,
+    ADVSEC_NAMESPACE_RFC_ADVSEC_SAFEBROWSING,
+    ADVSEC_NAMESPACE_RFC_ADVSEC_CUJOTELEMETRY_WIFIFP,
+    ADVSEC_NAMESPACE_RFC_ADVSEC_AGENT_RAPTR,
+    ADVSEC_NAMESPACE_UNKNOWN
+} advsec_namespace_t;
+
 typedef struct {
-    char *full_param_name;        /* Full TR181 parameter path */
-    char *short_param_name;       /* Short parameter name (e.g., "Enable", "Data") */
-    char *parent_object;          /* Parent object (e.g., "DeviceFingerPrint", "SafeBrowsing") */
-    rbusValueType_t data_type;    /* RBUS data type */
-    bool writable;                /* Whether parameter is writable */
+    char* full_name;
+    char* short_name;
+    char* parent_namespace;
+    advsec_namespace_t namespace_type;
+    rbusValueType_t type;
+    bool writable;
 } advsec_param_metadata_t;
 
-/* Decode and register advanced security parameters from JSON config */
 int advsec_decode_json_config(rbusHandle_t handle, const char *json_file_path);
 
-/* Lookup parameter metadata by full parameter name */
-advsec_param_metadata_t* advsec_get_param_metadata(const char *param_name);
+void advsec_free_registered_elements(void);
 
-/* Cleanup parameter metadata storage */
-void advsec_cleanup_param_metadata(void);
+advsec_param_metadata_t* advsec_find_param_metadata(const char* full_name);
+void advsec_free_param_metadata(void);
 
 #endif /* ADVSEC_BUS_JSON_DECODE_H */

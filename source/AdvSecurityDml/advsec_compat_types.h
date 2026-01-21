@@ -342,7 +342,7 @@ extern char g_SubSysPrefix_Irep[32];   /* Not defined in existing code */
 
 /* RBUS function declarations */
 extern int advsec_rbus_init(const char *component_name);
-extern int advsec_rbus_terminate(void);
+extern void advsec_rbus_terminate(void);
 
 /* CCSP Trace Levels - matching common-library definitions */
 #ifndef CCSP_TRACE_LEVEL_EMERGENCY

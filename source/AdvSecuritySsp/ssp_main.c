@@ -146,7 +146,7 @@ int  cmd_dispatch(int  command)
                 CcspTraceInfo(("Initializing Advanced Security with RBUS...\n"));
 
                 /* New RBUS-based initialization */
-                if (advsec_rbus_init(CCSP_COMPONENT_NAME_ADVSEC) != 0) {
+                if (advsec_rbus_init(RBUS_COMPONENT_NAME_ADVSEC) != 0) {
                     CcspTraceError(("Failed to initialize RBUS\n"));
                     return -1;
                 }
