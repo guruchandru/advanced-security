@@ -179,7 +179,7 @@ typedef LONG*                       PLONG;
 #endif
 
 #ifndef BOOL
-typedef bool                        BOOL;
+typedef unsigned char               BOOL;
 #endif
 
 #ifndef PBOOL

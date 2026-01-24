@@ -33,3 +33,9 @@ bin_PROGRAMS = CcspAdvSecuritySsp
 CcspAdvSecuritySsp_CPPFLAGS = -I$(top_srcdir)/include -I$(top_srcdir)/source/AdvSecurityDml -I$(top_srcdir)/source/AdvSecuritySsp $(CPPFLAGS) -I${PKG_CONFIG_SYSROOT_DIR}$(includedir)/rbus -I${PKG_CONFIG_SYSROOT_DIR}$(includedir)/cjson
 CcspAdvSecuritySsp_SOURCES = ssp_messagebus_interface.c ssp_main.c ssp_action.c ssp_messagebus_interface_priv.c ../AdvSecurityDml/advsec_compat_globals.c ../AdvSecurityDml/advsec_rbus_handlers.c ../AdvSecurityDml/advsec_bus_json_decode.c ../AdvSecurityDml/plugin_main.c ../AdvSecurityDml/cosa_adv_security_dml.c ../AdvSecurityDml/cosa_adv_security_internal.c ../AdvSecurityDml/cosa_adv_security_webconfig.c ../AdvSecurityDml/advsecurity_helpers.c ../AdvSecurityDml/advsecurity_param.c
 CcspAdvSecuritySsp_LDFLAGS = -lwebconfig_framework -lrbus -lcjson -lmsgpackc -ltrower-base64 -lsyscfg -lhal_platform -lcm_mgnt -lsafec -ldbus-1 -lrdkloggers -lbreakpadwrapper -lsysevent -lsecure_wrapper -ldl -rdynamic $(SSP_LDFLAGS)
+
+if WIFI_DATA_COLLECTION
+CcspAdvSecuritySsp_CPPFLAGS += -DDML_SUPPORT -DNON_PRIVILEGED -DWIFI_DATA_COLLECTION -I$(top_srcdir)/ccsp
+CcspAdvSecuritySsp_SOURCES += ../AdvSecurityDml/cujoagent_dcl_api.c
+CcspAdvSecuritySsp_LDFLAGS += -lwifi_webconfig
+endif

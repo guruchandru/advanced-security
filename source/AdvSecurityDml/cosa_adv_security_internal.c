@@ -166,7 +166,7 @@ static char *g_AdvSecTCPTrackerFilterDevicesEnabled = "Adv_TCPTrackerFilterDevic
 
 /* Platform synchronization primitives */
 pthread_mutex_t logMutex = PTHREAD_MUTEX_INITIALIZER;
-static pthread_cond_t logCond = PTHREAD_COND_INITIALIZER;
+pthread_cond_t logCond = PTHREAD_COND_INITIALIZER;
 key_t pubEventKey = 0;  /* Global event key for Advanced Security IPC */
 
 static BOOL logReady = FALSE;
