@@ -15,8 +15,16 @@
 #include "cosa_adv_security_internal.h"
 #include "cosa_adv_security_dml.h"
 
+#ifdef WIFI_DATA_COLLECTION
+#include "cujoagent_dcl_api.h"
+#endif
+
 extern ANSC_HANDLE bus_handle;
 extern COSA_DATAMODEL_AGENT* g_pAdvSecAgent;
+
+#ifdef WIFI_DATA_COLLECTION
+cujoagent_wifi_consumer_t *g_cujoagent_dcl = NULL;
+#endif
 
 #define STR_EQ(a,b) (strcmp((a), (b)) == 0)
 
@@ -1163,24 +1171,33 @@ int advsec_rbus_init(const char *component_name)
     
     CcspTraceInfo(("Initializing RBUS component: %s\n", component_name));
     
+    /* Open RBUS first - needed before CosaSecurityInitialize */
+    rc = rbus_open(&g_rbus_handle, component_name);
+    if (rc != RBUS_ERROR_SUCCESS) {
+        CcspTraceError(("rbus_open failed: %d\n", rc));
+        return -1;
+    }
+
+#ifdef WIFI_DATA_COLLECTION
+    g_cujoagent_dcl = AnscAllocateMemory(sizeof *g_cujoagent_dcl);
+    if (!g_cujoagent_dcl)
+    {
+        CcspTraceError(("%s: failed to allocate the memory for wifi data collection consumer\n", __FUNCTION__));
+    }
+#endif
+
     /* Create and initialize DML data structures (replaces COSA_Init) */
     if (!g_pAdvSecAgent) {
         CcspTraceInfo(("Creating Advanced Security data model...\n"));
         g_pAdvSecAgent = (PCOSA_DATAMODEL_AGENT)CosaSecurityCreate();
         if (!g_pAdvSecAgent) {
             CcspTraceError(("CosaSecurityCreate failed\n"));
+            rbus_close(g_rbus_handle);
             return -1;
         }
         
         CcspTraceInfo(("Initializing Advanced Security data model...\n"));
         CosaSecurityInitialize(g_pAdvSecAgent);
-    }
-    
-    /* Open RBUS */
-    rc = rbus_open(&g_rbus_handle, component_name);
-    if (rc != RBUS_ERROR_SUCCESS) {
-        CcspTraceError(("rbus_open failed: %d\n", rc));
-        return -1;
     }
     
     /* Parse JSON and register elements */

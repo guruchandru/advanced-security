@@ -243,9 +243,8 @@ static void cujoagent_consumer_deinit(cujoagent_wifi_consumer_t *consumer) {
     queue_destroy(consumer->queue);
   }
 
-  if (consumer->rbus_handle) {
-    rbus_close(consumer->rbus_handle);
-  }
+  /* Don't close rbus_handle - it's the global g_rbus_handle owned by advsec_rbus_handlers.c */
+  /* The consumer just borrows the handle; it doesn't own it */
 
   free(consumer->vap_subs_indexes);
 
@@ -3226,12 +3225,16 @@ static int cujoagent_consumer_initialize(cujoagent_wifi_consumer_t *consumer) {
 }
 
 static int cujoagent_rbus_initialize(cujoagent_wifi_consumer_t *consumer) {
+  extern rbusHandle_t g_rbus_handle;
+  
   if (!consumer) {
     return -1;
   }
 
-  if (rbus_open(&consumer->rbus_handle, RBUS_CONSUMER_NAME) !=
-      RBUS_ERROR_SUCCESS) {
+  /* Reuse the global RBUS handle instead of opening a new connection */
+  consumer->rbus_handle = g_rbus_handle;
+  if (!consumer->rbus_handle) {
+    CcspTraceError(("cujoagent_rbus_initialize: g_rbus_handle is NULL\n"));
     return -1;
   }
 

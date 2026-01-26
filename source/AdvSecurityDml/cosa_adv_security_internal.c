@@ -122,8 +122,8 @@
 */
 #endif
 
-rbusHandle_t rbus_handle;
-rbusHandle_t g_rbusHandle; /* Global RBUS handle for Advanced Security */
+/* Use the global RBUS handle from advsec_rbus_handlers.c */
+extern rbusHandle_t g_rbus_handle;
 
 extern ANSC_HANDLE bus_handle;
 extern char g_Subsystem[32];
@@ -472,9 +472,9 @@ int wifidcl_init_precheck()
     struct sysinfo info = {0};
     unsigned long uptime_seconds = 0;
 
-    if(rbus_handle == NULL)
+    if(g_rbus_handle == NULL)
     {
-        CcspTraceError(("%s:%d rbus_handle is NULL\n", __FUNCTION__, __LINE__));
+        CcspTraceError(("%s:%d g_rbus_handle is NULL\n", __FUNCTION__, __LINE__));
         return returnStatus;
     }
 
@@ -495,7 +495,7 @@ int wifidcl_init_precheck()
     }
 
     for (i = 0; i < retry_count; i++) {
-        returnStatus = rbus_getStr(rbus_handle, name, &s);
+        returnStatus = rbus_getStr(g_rbus_handle, name, &s);
         if (returnStatus != RBUS_ERROR_SUCCESS) {
             CcspTraceError(("%s:%d Failed to get [%s] over RBUS: [%d]\n", __FUNCTION__, __LINE__, name, returnStatus));
             CcspTraceInfo(("%s:%d Retry get WiFi webconfig init data in %d seconds\n", __FUNCTION__, __LINE__, retry_delay));
@@ -556,7 +556,7 @@ ANSC_STATUS Wifi_GetParameterValue(const char *pParamName, char *pReturnVal)
     char                   *pStrVal            = NULL;
 
     /* rbus get parameter value */
-    if(rbus_handle == NULL)
+    if(g_rbus_handle == NULL)
     {
         return ANSC_STATUS_FAILURE;
     }
@@ -566,7 +566,7 @@ ANSC_STATUS Wifi_GetParameterValue(const char *pParamName, char *pReturnVal)
     rbusValue_Init(&value);
 
     /* Get the value of a single parameter */
-    ret = rbus_get(rbus_handle, pParamName, &value);
+    ret = rbus_get(g_rbus_handle, pParamName, &value);
 
     if(ret != RBUS_ERROR_SUCCESS )
     {
@@ -610,7 +610,7 @@ ANSC_STATUS Wifi_SetParameterValue(const char *paramName, bool bValue)
     rbusValue_t value;
 
     /* rbus set parameter value */
-    if(rbus_handle == NULL)
+    if(g_rbus_handle == NULL)
     {
         return ANSC_STATUS_FAILURE;
     }
@@ -621,7 +621,7 @@ ANSC_STATUS Wifi_SetParameterValue(const char *paramName, bool bValue)
     rbusValue_SetBoolean(value, bValue);
 
     /* Set the value of a single parameter */
-    ret = rbus_set(rbus_handle, paramName, value, NULL);
+    ret = rbus_set(g_rbus_handle, paramName, value, NULL);
     if(ret != RBUS_ERROR_SUCCESS) {
         CcspTraceError(("%s-%d Rbus Error code:%d\n", __FUNCTION__, __LINE__, ret));
         rbusValue_Release(value);
@@ -1079,11 +1079,9 @@ CosaSecurityInitialize
     errno_t rc = -1;
 
     int ret = RBUS_ERROR_SUCCESS;
-    extern rbusHandle_t g_rbus_handle;
 
-    /* Reuse global RBUS handle for event subscriptions */
-    rbus_handle = g_rbus_handle;
-    if(!rbus_handle)
+    /* Verify global RBUS handle is initialized */
+    if(!g_rbus_handle)
     {
         CcspTraceError(("CosaSecurityInitialize: RBUS handle not initialized\n"));
         return ANSC_STATUS_FAILURE;
@@ -1142,7 +1140,7 @@ CosaSecurityInitialize
     {
         CcspTraceError(("CcspAdvSecurity: Unable to get HardwareVersion\n"));
     }
-#if (_COSA_BCM_MIPS_ || _COSA_DRG_TPG_ || CONFIG_CISCO)
+
     if(strlen(CONFIG_VENDOR_NAME) > 0)
     {
         rc = strcpy_s(manufacturer, sizeof(manufacturer), CONFIG_VENDOR_NAME);
@@ -1156,7 +1154,7 @@ CosaSecurityInitialize
     {
         CcspTraceError(("CcspAdvSecurity: Unable to get Manufacturer Name\n"));
     }
-#endif
+
 #if defined(_COSA_BCM_MIPS_)
     if( dpoe_getOnuId(&tDpoe_Mac) == 0)
     {
@@ -1404,7 +1402,7 @@ CosaSecurityInitialize
     advsec_handle_sysevent_async();
 
 #ifdef WAN_FAILOVER_SUPPORTED
-    ret = rbusEvent_Subscribe(rbus_handle, "Device.X_RDK_WanManager.CurrentActiveInterface", eventReceiveHandler, NULL, 0);
+    ret = rbusEvent_Subscribe(g_rbus_handle, "Device.X_RDK_WanManager.CurrentActiveInterface", eventReceiveHandler, NULL, 0);
     if(ret != RBUS_ERROR_SUCCESS)
     {
         CcspTraceError(("AdvSecurityEventConsumer: rbusEvent_Subscribe failed: %d\n", ret));
@@ -1412,7 +1410,7 @@ CosaSecurityInitialize
     }
 #endif
 #ifdef WIFI_DATA_COLLECTION
-    ret = rbusEvent_Subscribe(rbus_handle, LEVL_DML, wifiEventReceiveHandler, NULL, 0);
+    ret = rbusEvent_Subscribe(g_rbus_handle, LEVL_DML, wifiEventReceiveHandler, NULL, 0);
     if(ret != RBUS_ERROR_SUCCESS)
     {
         CcspTraceError(("AdvSecurityEventConsumer: rbusEvent_Subscribe %s failed: %d\n", LEVL_DML, ret));
@@ -1434,7 +1432,7 @@ CosaSecurityRemove
 
     /* Remove self */
     FreeCosaDmAgent(pMyObject);
-    /* Don't close rbus_handle here - it's owned by g_rbus_handle in advsec_rbus_handlers.c */
+    /* Don't close g_rbus_handle here - it's owned by advsec_rbus_handlers.c */
     CcspTraceInfo(("%s EXIT \n", __FUNCTION__));
 
     return returnStatus;

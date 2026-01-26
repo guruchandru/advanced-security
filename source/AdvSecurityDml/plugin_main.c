@@ -36,9 +36,11 @@
 #define THIS_PLUGIN_VERSION                         1
 
 COSA_DATAMODEL_AGENT* g_pAdvSecAgent = NULL;
+/*
 #ifdef WIFI_DATA_COLLECTION
 cujoagent_wifi_consumer_t *g_cujoagent_dcl = NULL;
 #endif
+*/
 
 /* DML plugin initialization commented out for JSON-based RBUS registration. This entire COSA_Init function will be replaced with RBUS-based JSON registration. */
 #if 0

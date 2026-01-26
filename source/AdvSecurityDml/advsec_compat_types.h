@@ -513,6 +513,16 @@ static inline void advsec_ccsp_log_write(int level, const char* format, ...) {
     va_start(args, format);
     vfprintf(stderr, format, args);
     va_end(args);
+    
+    /* Also write to log file if available */
+    extern FILE* g_advsec_logfile;
+    if (g_advsec_logfile) {
+        fprintf(g_advsec_logfile, "%s-%s-%s-", timestamp, pComponentName ? pComponentName : "AdvSec", g_advsec_TraceLevelStr[level]);
+        va_start(args, format);
+        vfprintf(g_advsec_logfile, format, args);
+        va_end(args);
+        fflush(g_advsec_logfile);
+    }
 }
 
 /* Additional ANSC trace/debug functions - no-op implementations */
